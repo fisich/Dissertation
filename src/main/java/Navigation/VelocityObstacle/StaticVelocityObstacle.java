@@ -4,19 +4,36 @@ import Navigation.Agent;
 import org.apache.commons.math3.geometry.euclidean.twod.Vector2D;
 import org.apache.commons.math3.util.FastMath;
 
+import static MathExtensions.Vector2DExtension.*;
+
 public class StaticVelocityObstacle extends BaseObstacle{
     private final double minkowskiRadius;
-    private final Vector2D relativeObstaclePos;
 
     public StaticVelocityObstacle(Agent A, Agent B) {
-        type = VelocityObstacleType.STATIC;
-        minkowskiRadius = (B.radius * 1.05d + A.radius);
-        relativeObstaclePos = B.getPosition().subtract(A.getPosition());
+        _relativeObstaclePos = B.getPosition().subtract(A.getPosition());
+        minkowskiRadius = (B.radius + A.radius);
+        double distanceBetweenAgents = _relativeObstaclePos.getNorm();
+        // Длина касательной к окружности
+        double tangentLength = 0;
+        if (distanceBetweenAgents > minkowskiRadius)
+            tangentLength = FastMath.sqrt(distanceBetweenAgents * distanceBetweenAgents - minkowskiRadius * minkowskiRadius);
+        else
+            System.out.println("Static obstacle cross");
+        // sin и cos для поворота прямой, соединяющей центры агента и препятствия в сторону касательной
+        double sin = minkowskiRadius / distanceBetweenAgents;
+        double cos = tangentLength / distanceBetweenAgents;
+        // Текущая величина скорости
+        double velValue = A.getVelocity().getNorm();
+        Vector2D tangentVec = _relativeObstaclePos.normalize().scalarMultiply(velValue);
+        _rightSide = RotateVector(tangentVec, -sin, cos);
+        _leftSide = RotateVector(tangentVec, sin, cos);
+        if (_leftSide.isNaN() || _rightSide.isNaN())
+            System.out.println("ctor static");
     }
 
     @Override
     public boolean IsCollideWithVelocityObstacle(Vector2D point) {
-        return IsVecCrossCircle(point, relativeObstaclePos, minkowskiRadius);
+        return IsVecCrossCircle(point, _relativeObstaclePos, minkowskiRadius);
     }
 
     private static boolean IsVecCrossCircle(Vector2D vec, Vector2D circleCenter, double radius)
@@ -34,38 +51,44 @@ public class StaticVelocityObstacle extends BaseObstacle{
         // D = (2*x_c+2*m*y_c)^2 - 4(1+m^2)(x_c^2+y_c^2-r^2)
         // После оптицизации остается проверка:
         // (x_c+m*y_c)^2 >= (1+m^2)(x_c^2+y_c^2-r^2)
-        double m = vec.getY() / vec.getX();
+        double m = GetLineEquation(Vector2D.ZERO, vec).M;
         double xC_plus_m_yC = circleCenter.getX() + m * circleCenter.getY();
         double discriminant = (xC_plus_m_yC * xC_plus_m_yC) - (1 + m*m)*(circleCenter.getX() * circleCenter.getX()
                 + circleCenter.getY() * circleCenter.getY() - radius * radius);
-        double accuracy = 0.25;
-        if (discriminant < accuracy) {
-            return false;
-        }
-        return discriminant > 0;
+        return discriminant >= 0;
     }
 
     @Override
-    public Vector2D FindVelocityOutSideVelocityObstacle(Agent agent) {
-        double distanceBetweenAgents = relativeObstaclePos.getNorm();
-        // Длина касательной к окружности
-        double tangentLength = FastMath.sqrt(relativeObstaclePos.getNormSq() - minkowskiRadius * minkowskiRadius);
-        // sin и cos для поворота прямой, соединяющей центры агента и препятствия в сторону касательной
-        double sin = minkowskiRadius / distanceBetweenAgents;
-        double cos = tangentLength / distanceBetweenAgents;
-        // Текущая величина скорости
-        double velValue = agent.getVelocity().getNorm();
-        Vector2D tangentVec = relativeObstaclePos.normalize().scalarMultiply(velValue);
-
-        Vector2D rightSide = new Vector2D(tangentVec.getX() * cos - tangentVec.getY() * sin,
-                tangentVec.getX() * sin + tangentVec.getY() * cos);
-        Vector2D leftSide = new Vector2D(tangentVec.getX() * cos + tangentVec.getY() * sin,
-                - tangentVec.getX() * sin + tangentVec.getY() * cos);
-        //if (leftSide.isNaN() || rightSide.isNaN())
-        //    return null;
-        if (Vector2D.distanceSq(leftSide, agent.getVelocity()) < Vector2D.distanceSq(rightSide, agent.getVelocity()))
-            return leftSide;
+    public Vector2D FindVelocityOutsideVelocityObstacle(Vector2D currentVelocity) {
+        if (currentVelocity.isNaN())
+            System.out.println("Find new Vel static is NaN");
+        VelocityObstacleSide bestSide;
+        if (Vector2D.distanceSq(_leftSide, currentVelocity) < Vector2D.distanceSq(_rightSide, currentVelocity))
+            bestSide = VelocityObstacleSide.LEFT;
         else
-            return rightSide;
+            bestSide = VelocityObstacleSide.RIGHT;
+        return FindVelocityOutsideVelocityObstacle(currentVelocity, bestSide);
+    }
+
+    @Override
+    public Vector2D FindVelocityOutsideVelocityObstacle(Vector2D currentVelocity, VelocityObstacleSide side) {
+        Vector2D result;
+        switch (side)
+        {
+            case LEFT:
+                result = _leftSide;
+                return RotateVector(result, 0.05d);
+            case RIGHT:
+                result = _rightSide;
+                return RotateVector(result, -0.05d);
+            default:
+                throw new IllegalStateException("Unexpected value: " + side);
+        }
+    }
+
+    @Override
+    public VelocityObstacleType type()
+    {
+        return VelocityObstacleType.STATIC;
     }
 }

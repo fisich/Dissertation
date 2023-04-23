@@ -1,9 +1,6 @@
 package Navigation.PathFinding;
 
-import Navigation.World;
 import org.apache.commons.math3.geometry.euclidean.twod.Vector2D;
-
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;

@@ -2,14 +2,14 @@ package Navigation;
 
 import Navigation.PathFinding.AStarPathFinding;
 import Navigation.PathFinding.PathProcessing;
-import Navigation.VelocityObstacle.VelocityObstacle;
+import Navigation.VelocityObstacle.BaseObstacle;
+import Navigation.VelocityObstacle.VelocityObstacleGroupFinder;
 import javafx.scene.paint.Color;
 import org.apache.commons.math3.exception.MathArithmeticException;
 import org.apache.commons.math3.exception.util.LocalizedFormats;
 import org.apache.commons.math3.geometry.euclidean.twod.Vector2D;
 import org.apache.commons.math3.util.MathArrays;
 
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -23,9 +23,10 @@ public class Agent {
     private World _worldRef;
     public double _viewRadius;
     public final boolean _draw;
-    private VelocityObstacle _VO = null;
+    private VelocityObstacleGroupFinder _VO = null;
     private Queue<Vector2D> route = new LinkedList<>();
     private boolean hasCompleteMovement = true;
+    private long prevTick;
 
     public Vector2D straightVelocity = new Vector2D(0,0);
     public Vector2D maxSpeedVelocity = new Vector2D(0,0);
@@ -50,10 +51,11 @@ public class Agent {
             tempRoute = tempRoute.stream().map(pos -> _worldRef.ToCenterOfWorldPoint2D(pos)).collect(Collectors.toList());
             route = new LinkedList<>(PathProcessing.StraightenThePath(tempRoute));
             hasCompleteMovement = false;
+            prevTick = System.currentTimeMillis();
         }
     }
 
-    public void Tick(int FPS) throws Exception {
+    public void Tick(int FPS) {
         if (route.isEmpty()) {
             hasCompleteMovement = true;
             _currentVelocity = _goalVelocity = Vector2D.ZERO;
@@ -71,25 +73,23 @@ public class Agent {
                 nextPoint = route.peek();
         }
         _goalVelocity = nextPoint.subtract(_position).normalize().scalarMultiply(MaxVelocity);
-        List<Agent> agents = GetAgentsAround();
-        if (agents.size() > 0) {
-            if (color == Color.BROWN)
-            {
-                System.out.println(agents.get(0).color == Color.AZURE);
-            }
-            _VO = new VelocityObstacle(this, agents.get(0));
-            if (!_VO.IsCollideWithVelocityObstacle(_goalVelocity.subtract(agents.get(0).getVelocity()))){
+        if (System.currentTimeMillis() - prevTick > 20) {
+            prevTick = System.currentTimeMillis();
+            List<Agent> agents = GetAgentsAround();
+            if (agents.size() > 0) {
+                _VO = new VelocityObstacleGroupFinder(this, agents);
+                if (!_VO.IsCollideWithVelocityObstacle(_goalVelocity)) {
+                    _currentVelocity = _goalVelocity;
+                } else {
+                    if (_VO.IsCollideWithVelocityObstacle(_currentVelocity)) {
+                        System.out.println(color);
+                        _currentVelocity = _VO.FindVelocityOutsideVelocityObstacle(_currentVelocity);//.add(_currentVelocity).scalarMultiply(0.5d);
+                        //_currentVelocity = _VO.FindVelocityOutsideVelocityObstacle(_goalVelocity.add(_currentVelocity).scalarMultiply(0.5d));
+                    }
+                }
+            } else {
                 _currentVelocity = _goalVelocity;
             }
-            else
-            {
-                if (_VO.IsCollideWithVelocityObstacle(_currentVelocity.subtract(agents.get(0).getVelocity())))
-                    _currentVelocity = _VO.FindVelocityOutSideVelocityObstacle(this).add(_currentVelocity).scalarMultiply(0.5d);
-            }
-        }
-        else
-        {
-            _currentVelocity = _goalVelocity;
         }
         _position = _position.add(_currentVelocity.scalarMultiply(1d / FPS));
     }
@@ -107,22 +107,6 @@ public class Agent {
                                 .subtract(getPosition())
                                 .getNorm() < _viewRadius + agent.radius)
                 .collect(Collectors.toList());
-    }
-
-    private List<Agent> SortAgents(List<Agent> agents)
-    {
-        final List<Map.Entry<Agent, Double>> angles = new ArrayList<>();
-        agents.forEach(a -> {
-            angles.add(new AbstractMap.SimpleEntry<>(a,
-                    angleBetweenVectors(_currentVelocity,
-                            a.getPosition().subtract(getPosition()).normalize()
-                    )
-                )
-            );
-        });
-        angles.sort(Comparator.comparingDouble(Map.Entry::getValue));
-        List<Agent> sortedAgents = angles.stream().map(Map.Entry::getKey).collect(Collectors.toList());
-        return sortedAgents;
     }
 
     public static double angleBetweenVectors(Vector2D v1, Vector2D v2) throws MathArithmeticException{
@@ -152,5 +136,5 @@ public class Agent {
 
     public Vector2D getGoalVelocity() {return new Vector2D(_goalVelocity.getX(), _goalVelocity.getY());}
 
-    public VelocityObstacle GetVelocityObstacle() { return _VO; }
+    public VelocityObstacleGroupFinder GetVelocityObstacle() { return _VO; }
 }
