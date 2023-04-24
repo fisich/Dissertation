@@ -2,12 +2,9 @@ package Navigation.VelocityObstacle;
 
 import MathExtensions.Vector2DExtension;
 import Navigation.Agent;
-import com.sun.javafx.css.CalculatedValue;
-import javafx.scene.paint.Color;
 import org.apache.commons.math3.geometry.euclidean.twod.Vector2D;
 import org.apache.commons.math3.util.FastMath;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -15,10 +12,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static MathExtensions.Vector2DExtension.*;
-import static MathExtensions.Vector2DExtension.RotateVector;
 
 public class DynamicVelocityObstacle extends BaseObstacle{
-    private final DynamicObstacleType dynamicType;
+    public final DynamicObstacleType dynamicType;
 
     public DynamicVelocityObstacle(BaseObstacle VORight, BaseObstacle VOLeft)
     {
@@ -29,21 +25,22 @@ public class DynamicVelocityObstacle extends BaseObstacle{
                 VORight.relativeObstaclePos(), relativeVORight);
         _leftSide = relativeVOLeft.subtract(_relativeObstaclePos);
         _rightSide = relativeVORight.subtract(_relativeObstaclePos);
-        if (GetAngleBetweenVectors(_rightSide, _leftSide) <= 0 || GetAngleBetweenVectors(_rightSide, _leftSide) == Math.PI)
+        double angle = GetAngleBetweenVectors(_rightSide, _leftSide);
+        if (angle <= 0 || angle >= Math.PI)
             dynamicType = DynamicObstacleType.WIDE;
         else
             dynamicType = DynamicObstacleType.NARROW;
     }
 
     public DynamicVelocityObstacle(Agent A, Agent B) {
-        _relativeObstaclePos = B.getVelocity();
+        _relativeObstaclePos = B.getVelocity().add(A.getVelocity()).scalarMultiply(0.5d);
         double minkowskiRadius = (B.radius + A.radius);
         double minkowskiRadiusSq = minkowskiRadius * minkowskiRadius;
         Vector2D relativeObstaclePos = B.getPosition().subtract(A.getPosition());
         double distanceBetweenAgentsSq = Vector2D.distanceSq(B.getPosition(), A.getPosition());
         double distanceBetweenAgents = FastMath.sqrt(distanceBetweenAgentsSq);
         if (distanceBetweenAgentsSq < minkowskiRadiusSq) {
-            System.out.println("Tricky collision: inside");
+            throw new IllegalStateException("Tricky collision: inside dynamic");
         }
         // Рассматриваем прямоугольный треугольник, чтобы найти касательную и угол ее наклона слева и справа для
         // формирования области VO.
@@ -91,10 +88,8 @@ public class DynamicVelocityObstacle extends BaseObstacle{
 
     private boolean IsPointOutsideTriangle(Vector2D point)
     {
-        double angleBetweenLeftRight = GetAngleBetweenVectors(_leftSide.add(_relativeObstaclePos),
-                _rightSide.add(_relativeObstaclePos));
-        double angleBetweenLeftPoint = GetAngleBetweenVectors(_leftSide.add(_relativeObstaclePos),
-                point.subtract(_relativeObstaclePos));
+        double angleBetweenLeftRight = GetAngleBetweenVectors(_leftSide, _rightSide);
+        double angleBetweenLeftPoint = GetAngleBetweenVectors(_leftSide, point.subtract(_relativeObstaclePos));
         if (angleBetweenLeftPoint < 0)
             return true;
         return angleBetweenLeftPoint > angleBetweenLeftRight;
@@ -154,6 +149,8 @@ public class DynamicVelocityObstacle extends BaseObstacle{
     @Override
     public Vector2D FindVelocityOutsideVelocityObstacle(Vector2D currentVelocity, VelocityObstacleSide side)
     {
+        if(!IsCollideWithVelocityObstacle(currentVelocity))
+            return currentVelocity;
         if (currentVelocity.isNaN())
             System.out.println("Why current velocity is nan");
         Vector2D VOside;
@@ -179,7 +176,7 @@ public class DynamicVelocityObstacle extends BaseObstacle{
                 System.out.println("Narrow");
                 // Получаем отклоненную скорость
                 Vector2D deviatedVelocity = CalculateDeviatedVelocity(VOside, currentVelocity);
-                if (IsCollideWithVelocityObstacle(Vector2D.ZERO)) // Inside skip
+                if (IsCollideWithVelocityObstacle(Vector2D.ZERO))
                 {
                     if (deviatedVelocity.equals(Vector2D.ZERO))
                     {
@@ -193,9 +190,9 @@ public class DynamicVelocityObstacle extends BaseObstacle{
                     {
                         double angle = GetAngleBetweenVectors(currentVelocity, deviatedVelocity);
                         if (angle < 0)
-                            deviatedVelocity = RotateVector(deviatedVelocity, -0.05d);
+                            deviatedVelocity = RotateVector(deviatedVelocity, -0.1d);
                         else
-                            deviatedVelocity = RotateVector(deviatedVelocity, 0.05d);
+                            deviatedVelocity = RotateVector(deviatedVelocity, 0.1d);
                         if (IsCollideWithVelocityObstacle(deviatedVelocity))
                         {
                             System.out.println("Definitely problem with narrow VO");
@@ -212,9 +209,9 @@ public class DynamicVelocityObstacle extends BaseObstacle{
                     else {
                         double angle = GetAngleBetweenVectors(currentVelocity, deviatedVelocity);
                         if (angle < 0)
-                            deviatedVelocity = RotateVector(deviatedVelocity, -0.05d);
+                            deviatedVelocity = RotateVector(deviatedVelocity, -0.1d);
                         else
-                            deviatedVelocity = RotateVector(deviatedVelocity, 0.05d);
+                            deviatedVelocity = RotateVector(deviatedVelocity, 0.1d);
                     }
                     if (IsCollideWithVelocityObstacle(deviatedVelocity))
                         System.out.println("wrong deviated vel in narrow");
@@ -234,8 +231,10 @@ public class DynamicVelocityObstacle extends BaseObstacle{
                             System.out.println("cur " + currentVelocity);
                             System.out.println("str " + straightVelocity);
                             System.out.println("");
+                            return deviatedVelocity;
                         }
-                        return deviatedVelocity.add(straightVelocity).scalarMultiply(0.5d);
+                        else
+                            return deviatedVelocity.add(straightVelocity).scalarMultiply(0.5d);
                     }
                 }
             case WIDE:
@@ -247,47 +246,37 @@ public class DynamicVelocityObstacle extends BaseObstacle{
                     System.out.println("lef " + leftSide().add(relativeObstaclePos()));
                     System.out.println("rig " + rightSide().add(relativeObstaclePos()));
                     System.out.println("cur " + currentVelocity);
-                    deviatedVelocity = CalculateDeviatedVelocity(VOside, currentVelocity);
-                    Vector2D normalVelocity = CalculateNormalVelocity(VOside);
-                    if (normalVelocity.getNorm() > currentVelocity.getNorm())
-                        normalVelocity = normalVelocity.normalize().scalarMultiply(currentVelocity.getNorm());
-                    Vector2D outsideVelocityCenter = CalculateDeviatedVelocity(VOside,
-                            _relativeObstaclePos.normalize().scalarMultiply(currentVelocity.getNorm()));
+                    deviatedVelocity = VOside.normalize().scalarMultiply(currentVelocity.getNorm());
+                    Vector2D normalVelocity = CalculateNormalVelocity(VOside).normalize()
+                            .scalarMultiply(currentVelocity.getNorm());
+                    //deviatedVelocity = CalculateDeviatedVelocity(VOside, normalVelocity, VOside);
                     if (!deviatedVelocity.equals(Vector2D.ZERO))
                     {
                         double angle = GetAngleBetweenVectors(currentVelocity, deviatedVelocity);
                         if (angle < 0)
-                            deviatedVelocity = RotateVector(deviatedVelocity, -0.05d);
+                            deviatedVelocity = RotateVector(deviatedVelocity, -0.1d);
                         else
-                            deviatedVelocity = RotateVector(deviatedVelocity, 0.05d);
+                            deviatedVelocity = RotateVector(deviatedVelocity, 0.1d);
                     }
-                    if (!outsideVelocityCenter.equals(Vector2D.ZERO))
+                    else
                     {
-                        double angle = GetAngleBetweenVectors(currentVelocity, outsideVelocityCenter);
-                        if (angle < 0)
-                            outsideVelocityCenter = RotateVector(outsideVelocityCenter, -0.05d);
-                        else
-                            outsideVelocityCenter = RotateVector(outsideVelocityCenter, 0.05d);
+                        System.out.println("Oops");
+                        return normalVelocity;
                     }
-                    List<Vector2D> velocities = new ArrayList<>();
-                    velocities.add(deviatedVelocity);
-                    velocities.add(outsideVelocityCenter);
-                    velocities = velocities.stream().filter(a -> !a.equals(Vector2D.ZERO)).collect(Collectors.toList());
-                    Optional<Vector2D> best = velocities.stream().min(Comparator.comparingDouble(a -> Vector2D.distanceSq(currentVelocity, a)));
-                    VelocityObstacleSide debug;
-                    if (!best.isPresent())
-                    {
-                        debug = chooseClosestSide(currentVelocity);
+                    if (IsCollideWithVelocityObstacle(deviatedVelocity)) {
+                        System.out.println("think better");
+                        IsCollideWithVelocityObstacle(deviatedVelocity);
                     }
-                    if (IsCollideWithVelocityObstacle(normalVelocity))
-                        normalVelocity.normalize().scalarMultiply(50d);
-                    return best.orElse(normalVelocity);
+                    return deviatedVelocity;
                 }
                 // Outside
                 else
                 {
                     System.out.println("outside wide");
-                    deviatedVelocity = CalculateDeviatedVelocity(VOside, currentVelocity);
+                    deviatedVelocity = VOside.normalize().scalarMultiply(currentVelocity.getNorm());
+                    //Vector2D normal = CalculateNormalVelocity(VOside);
+                    //if (IsPointOnLine(normal, _relativeObstaclePos, VOside.add(_relativeObstaclePos)))
+                    //    deviatedVelocity = deviatedVelocity.add(normal.scalarMultiply(0.9d)).scalarMultiply(0.5d);
                     if (deviatedVelocity.equals(Vector2D.ZERO))
                     {
                         System.out.println("deviated velocity not works");
@@ -295,9 +284,9 @@ public class DynamicVelocityObstacle extends BaseObstacle{
                     else {
                         double angle = GetAngleBetweenVectors(currentVelocity, deviatedVelocity);
                         if (angle < 0)
-                            deviatedVelocity = RotateVector(deviatedVelocity, -0.05d);
+                            deviatedVelocity = RotateVector(deviatedVelocity, -0.1d);
                         else
-                            deviatedVelocity = RotateVector(deviatedVelocity, 0.05d);
+                            deviatedVelocity = RotateVector(deviatedVelocity, 0.1d);
                     }
                     if (IsCollideWithVelocityObstacle(deviatedVelocity)) {
                         System.out.println("rel " + relativeObstaclePos());
@@ -307,33 +296,15 @@ public class DynamicVelocityObstacle extends BaseObstacle{
                         System.out.println("new " + deviatedVelocity);
                         IsCollideWithVelocityObstacle(deviatedVelocity);
                     }
-                    Vector2D straightVelocity = CalculateStraightVelocity(VOside, currentVelocity).scalarMultiply(0.9d);
-                    if (straightVelocity.equals(Vector2D.ZERO))
-                    {
-                        System.out.println("skip straight");
-                        return deviatedVelocity;
-                    }
-                    else
-                    {
-                        if (IsCollideWithVelocityObstacle(straightVelocity))
-                        {
-                            System.out.println("rel " + relativeObstaclePos());
-                            System.out.println("lef " + leftSide().add(relativeObstaclePos()));
-                            System.out.println("rig " + rightSide().add(relativeObstaclePos()));
-                            System.out.println("cur " + currentVelocity);
-                            System.out.println("str " + straightVelocity);
-                            System.out.println("");
-                            IsCollideWithVelocityObstacle(straightVelocity);
-                        }
-                        return deviatedVelocity.add(straightVelocity).scalarMultiply(0.5d);
-                    }
+                    return deviatedVelocity;
                 }
             default:
                 throw new IllegalStateException("Unexpected value: " + dynamicType);
         }
     }
 
-    private Vector2D CalculateDeviatedVelocity(Vector2D VOClosestSide, Vector2D agentVelocity)
+
+    private Vector2D CalculateDeviatedVelocity(Vector2D VOClosestSide, Vector2D agentVelocity, Vector2D priority)
     {
         // Проверяем, есть ли такой поворот с текущей скоростью, который позволит выйти из VO
         // Для этого нужно для окружности радиусом Velocity определить касание с стороной VOClosestSide
@@ -347,7 +318,6 @@ public class DynamicVelocityObstacle extends BaseObstacle{
         // Поворот с текущей скоростью не найден
         if (discriminant < 0)
         {
-            System.out.println("Deviated velocity will not help");
             return Vector2D.ZERO;
         }
         else
@@ -368,22 +338,14 @@ public class DynamicVelocityObstacle extends BaseObstacle{
             velocities.add(secondDeviatedVelocity);
             velocities = velocities.stream().filter(vel -> IsPointOnLine(vel, _relativeObstaclePos, VOClosestSide.add(_relativeObstaclePos)))
                     .collect(Collectors.toList());
-            if (velocities.isEmpty())
-            {
-                System.out.println("rel " + relativeObstaclePos());
-                System.out.println("lef " + leftSide().add(relativeObstaclePos()));
-                System.out.println("rig " + rightSide().add(relativeObstaclePos()));
-                System.out.println("cur " + agentVelocity);
-                System.out.println("");
-            }
-            System.out.println("f " + firstDeviatedVelocity);
-            System.out.println("s " + secondDeviatedVelocity);
-            result = velocities.stream().min(Comparator.comparingDouble(a -> Vector2D.distanceSq(agentVelocity, a)));
-            if (result.isPresent())
-                return result.get();
-            else
-                return Vector2D.ZERO;
+            result = velocities.stream().min(Comparator.comparingDouble(a -> Vector2D.distanceSq(priority, a)));
+            return result.orElse(Vector2D.ZERO);
         }
+    }
+
+    private Vector2D CalculateDeviatedVelocity(Vector2D VOClosestSide, Vector2D agentVelocity)
+    {
+        return CalculateDeviatedVelocity(VOClosestSide, agentVelocity, agentVelocity);
     }
 
     private Vector2D CalculateNormalVelocity(Vector2D VOClosestSide)
@@ -413,7 +375,7 @@ public class DynamicVelocityObstacle extends BaseObstacle{
         }
     }
 
-    private enum DynamicObstacleType
+    public enum DynamicObstacleType
     {
         NARROW,
         WIDE

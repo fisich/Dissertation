@@ -8,6 +8,7 @@ import static MathExtensions.Vector2DExtension.*;
 
 public class StaticVelocityObstacle extends BaseObstacle{
     private final double minkowskiRadius;
+    private boolean inSide = false;
 
     public StaticVelocityObstacle(Agent A, Agent B) {
         _relativeObstaclePos = B.getPosition().subtract(A.getPosition());
@@ -17,8 +18,10 @@ public class StaticVelocityObstacle extends BaseObstacle{
         double tangentLength = 0;
         if (distanceBetweenAgents > minkowskiRadius)
             tangentLength = FastMath.sqrt(distanceBetweenAgents * distanceBetweenAgents - minkowskiRadius * minkowskiRadius);
-        else
+        else {
+            inSide = true;
             System.out.println("Static obstacle cross");
+        }
         // sin и cos для поворота прямой, соединяющей центры агента и препятствия в сторону касательной
         double sin = minkowskiRadius / distanceBetweenAgents;
         double cos = tangentLength / distanceBetweenAgents;
@@ -73,6 +76,11 @@ public class StaticVelocityObstacle extends BaseObstacle{
     @Override
     public Vector2D FindVelocityOutsideVelocityObstacle(Vector2D currentVelocity, VelocityObstacleSide side) {
         Vector2D result;
+        if (inSide)
+        {
+            System.out.println("away!");
+            //return RotateVector(currentVelocity, Math.PI/2);
+        }
         switch (side)
         {
             case LEFT:

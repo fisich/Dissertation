@@ -32,20 +32,20 @@ public class Main extends Application implements IMouseEventReceiver {
         // Scenario 3
         agent = new Agent(300, 50, 20, Color.AZURE, world, false);
         world.agents.add(agent);
-        agentDummy1 = new Agent(425, 175, 20, Color.BROWN, world, false);
-        world.agents.add(agentDummy1);
+        //agentDummy1 = new Agent(425, 175, 20, Color.BROWN, world, false);
+        //world.agents.add(agentDummy1);
         agentDummy2 = new Agent(550,300,20,Color.BLACK, world,false);
         world.agents.add(agentDummy2);
-        agentDummy3 = new Agent(425, 425, 20, Color.GRAY, world, true);
-        world.agents.add(agentDummy3);
+        //agentDummy3 = new Agent(425, 425, 20, Color.GRAY, world, false);
+        //world.agents.add(agentDummy3);
         agentDummy4 = new Agent(300, 550, 20, Color.SILVER, world, false);
         world.agents.add(agentDummy4);
-        agentDummy5 = new Agent(175,425,20,Color.BLUE, world,false);
-        world.agents.add(agentDummy5);
+        //agentDummy5 = new Agent(175,425,20,Color.BLUE, world,false);
+        //world.agents.add(agentDummy5);
         agentDummy6 = new Agent(50, 300, 20, Color.LIME, world, false);
         world.agents.add(agentDummy6);
-        agentDummy7 = new Agent(175,175,20,Color.ORANGE, world,true);
-        world.agents.add(agentDummy7);
+        //agentDummy7 = new Agent(175,175,20,Color.ORANGE, world,false);
+        //world.agents.add(agentDummy7);
 
         // Scenario 4
         //agent = new Agent(400, 300, 20, Color.AZURE, world, true);
@@ -122,13 +122,13 @@ public class Main extends Application implements IMouseEventReceiver {
 
         // Scenario 3
         agent.MoveTo(300, 550);
-        agentDummy1.MoveTo(175,425);
+        //agentDummy1.MoveTo(175,425);
         agentDummy2.MoveTo(50,300);
-        agentDummy3.MoveTo(175,175);
+        //agentDummy3.MoveTo(175,175);
         agentDummy4.MoveTo(300,50);
-        agentDummy5.MoveTo(425,175);
+        //agentDummy5.MoveTo(425,175);
         agentDummy6.MoveTo(550,300);
-        agentDummy7.MoveTo(425,425);
+        //agentDummy7.MoveTo(425,425);
 
         // Scenario 4
         //agent.MoveTo(100, 300);

@@ -34,6 +34,10 @@ public class Vector2DExtensionTests {
         second = new Vector2D(0, -1);
         assertEquals(Math.PI * 0.75d, GetAngleBetweenVectors(first, second), 0.00001);
 
+        first = new Vector2D(0.70710678118, 0.70710678118);
+        second = new Vector2D(-1, 0);
+        assertEquals(- Math.PI * 0.75d, GetAngleBetweenVectors(first, second), 0.00001);
+
         first = new Vector2D(-1, -1);
         second = new Vector2D(1, -1);
         assertEquals(-Math.PI/2, GetAngleBetweenVectors(first, second), 0.00001);
@@ -41,11 +45,6 @@ public class Vector2DExtensionTests {
 
         second = new Vector2D(1, 1);
         assertEquals(Math.PI, GetAngleBetweenVectors(first, second), 0.00001);
-
-        first = new Vector2D(100.2386276411, -27.5061840565);
-        second = new Vector2D(41.8292244, -2.2274478);
-        double angle = GetAngleBetweenVectors(first, second);
-        System.out.println();
     }
 
     @Test

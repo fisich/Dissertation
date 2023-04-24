@@ -47,8 +47,10 @@ public class GenericVelocityObstacle extends BaseObstacle{
         Vector2D velocity = obstacle.FindVelocityOutsideVelocityObstacle(currentVelocity);
         if (velocity.isNaN())
             System.out.println("New velocity is NaN");
-        if (velocity.getNorm() > 51)
+        if (velocity.getNorm() > 51) {
             System.out.println("New velocity is high " + velocity.getNorm() + " " + obstacle.type());
+            return velocity.normalize().scalarMultiply(currentVelocity.getNorm());
+        }
         return velocity;
     }
 

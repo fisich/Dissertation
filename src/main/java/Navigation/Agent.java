@@ -13,10 +13,15 @@ import org.apache.commons.math3.util.MathArrays;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static MathExtensions.Vector2DExtension.GetAngleBetweenVectors;
+import static MathExtensions.Vector2DExtension.RotateVector;
+
 public class Agent {
     private volatile Vector2D _position;
     private Vector2D _goalVelocity;
     private Vector2D _currentVelocity;
+    private Vector2D _targetVelocity;
+    private double rotateToTargetSpeed = 0.01d;
     public double MaxVelocity = 50;
     public final double radius;
     public  Color color;
@@ -26,7 +31,7 @@ public class Agent {
     private VelocityObstacleGroupFinder _VO = null;
     private Queue<Vector2D> route = new LinkedList<>();
     private boolean hasCompleteMovement = true;
-    private long prevTick;
+    private long prevTickGoal, prevTick;
 
     public Vector2D straightVelocity = new Vector2D(0,0);
     public Vector2D maxSpeedVelocity = new Vector2D(0,0);
@@ -38,7 +43,7 @@ public class Agent {
         _position = new Vector2D(posX, posY);
         this._worldRef = worldRef;
         _goalVelocity = new Vector2D(0,0);
-        _viewRadius = radius*4;
+        _viewRadius = radius*6;
         _draw = DRAW;
     }
 
@@ -58,7 +63,7 @@ public class Agent {
     public void Tick(int FPS) {
         if (route.isEmpty()) {
             hasCompleteMovement = true;
-            _currentVelocity = _goalVelocity = Vector2D.ZERO;
+            _currentVelocity = _targetVelocity = _goalVelocity = Vector2D.ZERO;
             return;
         }
         Vector2D nextPoint = route.peek();
@@ -66,29 +71,52 @@ public class Agent {
             route.poll();
             if(route.isEmpty()) {
                 hasCompleteMovement = true;
-                _currentVelocity = _goalVelocity = Vector2D.ZERO;
+                _currentVelocity = _targetVelocity = _goalVelocity = Vector2D.ZERO;
                 return;
             }
             else
                 nextPoint = route.peek();
         }
         _goalVelocity = nextPoint.subtract(_position).normalize().scalarMultiply(MaxVelocity);
-        if (System.currentTimeMillis() - prevTick > 20) {
-            prevTick = System.currentTimeMillis();
-            List<Agent> agents = GetAgentsAround();
-            if (agents.size() > 0) {
+        List<Agent> agents = GetAgentsAround();
+        if (agents.size() > 0) {
+            if (System.currentTimeMillis() - prevTickGoal > 200) {
+                prevTickGoal = System.currentTimeMillis();
                 _VO = new VelocityObstacleGroupFinder(this, agents);
                 if (!_VO.IsCollideWithVelocityObstacle(_goalVelocity)) {
-                    _currentVelocity = _goalVelocity;
-                } else {
+                    _targetVelocity = _goalVelocity.add(_currentVelocity).scalarMultiply(0.5d);
+                    rotateToTargetSpeed = 0.2d;
+                }
+            }
+            if (System.currentTimeMillis() - prevTick > 10){
+                {
+                    prevTick = System.currentTimeMillis();
                     if (_VO.IsCollideWithVelocityObstacle(_currentVelocity)) {
-                        System.out.println(color);
-                        _currentVelocity = _VO.FindVelocityOutsideVelocityObstacle(_currentVelocity);//.add(_currentVelocity).scalarMultiply(0.5d);
-                        //_currentVelocity = _VO.FindVelocityOutsideVelocityObstacle(_goalVelocity.add(_currentVelocity).scalarMultiply(0.5d));
+                        _targetVelocity = _VO.FindVelocityOutsideVelocityObstacle(_currentVelocity);
+                        rotateToTargetSpeed = 0.5d;
                     }
                 }
+            }
+        }
+        else
+        {
+            _targetVelocity = _goalVelocity;
+        }
+        if (_currentVelocity.getNorm() < 1)
+        {
+            _currentVelocity = _targetVelocity;
+        }
+        else {
+            double angle = GetAngleBetweenVectors(_currentVelocity, _targetVelocity);
+            _currentVelocity = _currentVelocity.add(_targetVelocity).scalarMultiply(0.5d);
+            if (Math.abs(angle) <= rotateToTargetSpeed) // ~5.7 grad
+            {
+                _currentVelocity = _targetVelocity;
             } else {
-                _currentVelocity = _goalVelocity;
+                if (angle < 0)
+                    _currentVelocity = RotateVector(_currentVelocity, -rotateToTargetSpeed);
+                else
+                    _currentVelocity = RotateVector(_currentVelocity, rotateToTargetSpeed);
             }
         }
         _position = _position.add(_currentVelocity.scalarMultiply(1d / FPS));

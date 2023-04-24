@@ -59,19 +59,23 @@ public class GroupVelocityObstacle implements IVelocityObstacle {
         //  4. когда цикл закончится у нас будет скорость слева либо 3а, либо по 3б
         //  5. В конце посмотреть какая скорость ближе к идеальной и взять ее, profit.
         if (_orderedObstacles.size() == 1) {
-            Vector2D aaa = _orderedObstacles.get(0).FindVelocityOutsideVelocityObstacle(currentVelocity);
-            if (_orderedObstacles.get(0).IsCollideWithVelocityObstacle(aaa))
-                System.out.println("single agent problem " + _orderedObstacles.get(0).type());
-            if (_orderedObstacles.get(0).IsCollideWithVelocityObstacle(aaa))
-                _orderedObstacles.get(0).FindVelocityOutsideVelocityObstacle(currentVelocity);
-            return aaa;
+            if (_orderedObstacles.get(0).IsCollideWithVelocityObstacle(currentVelocity))
+            {
+                Vector2D result = _orderedObstacles.get(0).FindVelocityOutsideVelocityObstacle(currentVelocity);
+                if (IsCollideWithVelocityObstacle(result))
+                    System.out.println("single VO error");
+                return result;
+            }
+            else {
+                System.out.println("returned current vel");
+                return currentVelocity;
+            }
         }
-        Vector2D rightVelocity = _orderedObstacles.get(0).FindVelocityOutsideVelocityObstacle(currentVelocity);
         int[] prevObstacle = new int[_orderedObstacles.size()];
         int prevObstacleIndex = 0;
         Arrays.fill(prevObstacle, -1);
         boolean isFindNewBestVelocity = true;
-        Vector2D bestVelocity = rightVelocity;
+        Vector2D bestVelocity = _orderedObstacles.get(0).FindVelocityOutsideVelocityObstacle(currentVelocity);
         while (isFindNewBestVelocity)
         {
             isFindNewBestVelocity = false;
@@ -81,19 +85,12 @@ public class GroupVelocityObstacle implements IVelocityObstacle {
                     if (prevObstacle[prevObstacleIndex] == i) {
                         if (i != prevObstacleIndex)
                             System.out.println("Resolve collision problem");
-                        bestVelocity = rightVelocity;
-                        break;
+                        return _orderedObstacles.get(i).FindVelocityOutsideVelocityObstacle(bestVelocity, BaseObstacle.VelocityObstacleSide.RIGHT);
                     } else {
                         prevObstacle[i] = prevObstacleIndex;
                         bestVelocity = _orderedObstacles.get(i).FindVelocityOutsideVelocityObstacle(bestVelocity);
                         if (bestVelocity.isNaN())
                             System.out.println("Best Velocity is Nan");
-                        if (bestVelocity == rightVelocity)
-                        {
-                            if (IsCollideWithVelocityObstacle(bestVelocity))
-                                System.out.println("inner agent problem");
-                            return bestVelocity;
-                        }
                         prevObstacleIndex = i;
                         isFindNewBestVelocity = true;
                         break;
