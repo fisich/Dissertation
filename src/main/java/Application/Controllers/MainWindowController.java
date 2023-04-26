@@ -3,7 +3,7 @@ package Application.Controllers;
 import Navigation.World;
 import Patterns.Observer.IMouseEventReceiver;
 import Patterns.Observer.MouseEventSender;
-import Rendering.WorldRenderer;
+import Application.Rendering.WorldRenderer;
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -13,11 +13,9 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 import java.io.IOException;
-import java.util.Random;
 
 public class MainWindowController extends MouseEventSender {
 
@@ -34,8 +32,8 @@ public class MainWindowController extends MouseEventSender {
         Parent root = loader.load();
         rootStage.setScene(new Scene(root));
         _world = world;
-        mapCanvas.setWidth(_world.map.sizeX * _world.map.mapTileSize);
-        mapCanvas.setHeight(_world.map.sizeY * _world.map.mapTileSize);
+        mapCanvas.setWidth(_world.map.tilesX * _world.map.mapTileSize);
+        mapCanvas.setHeight(_world.map.tilesY * _world.map.mapTileSize);
     }
 
     public void start()
@@ -49,6 +47,7 @@ public class MainWindowController extends MouseEventSender {
             public void handle(long currentNanoTime)
             {
                 _renderer.Redraw();
+                _world.SendTicks();
             }
         }.start();
     }

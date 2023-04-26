@@ -1,37 +1,37 @@
 package Navigation.VelocityObstacle;
 
 import Navigation.Agent;
+import javafx.scene.paint.Color;
 import org.apache.commons.math3.geometry.euclidean.twod.Vector2D;
 import org.apache.commons.math3.util.FastMath;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
-public class VelocityObstacle extends BaseObstacle{
-    public final BaseObstacle obstacle;
+public class GenericVelocityObstacle extends BaseObstacle{
+    private BaseObstacle obstacle;
 
-    public VelocityObstacle(Agent A, Agent B) {
+    public GenericVelocityObstacle(Agent A, Agent B) {
         Vector2D dynamicObstacleVelocity = B.getVelocity();
-        double minkowskiRadius = (B.radius * 1.05d + A.radius);
+        double minkowskiRadius = (B.radius + A.radius);
         double minkowskiRadiusSq = minkowskiRadius * minkowskiRadius;
         double distanceBetweenAgentsSq = Vector2D.distanceSq(B.getPosition(), A.getPosition());
         // Скорость такая, что считаем статичным
-        if (dynamicObstacleVelocity.getNorm() < 1)
+        if (dynamicObstacleVelocity.getNorm() < 0.01)
         {
-            type = VelocityObstacleType.STATIC;
             obstacle = new StaticVelocityObstacle(A, B);
         }
         // TODO: Когда внутри VO, считаем ли мы объект как Static????
         else if (distanceBetweenAgentsSq < minkowskiRadiusSq)
         {
-            type = VelocityObstacleType.STATIC;
             obstacle = new StaticVelocityObstacle(A, B);
             System.out.println("Tricky collision: " + (FastMath.sqrt(minkowskiRadiusSq - distanceBetweenAgentsSq)) + "  " + LocalDateTime.now().toString());
         }
         else
         {
-            type = VelocityObstacleType.DYNAMIC;
             obstacle = new DynamicVelocityObstacle(A, B);
         }
+        this._type = obstacle.type();
     }
 
     @Override
@@ -39,8 +39,32 @@ public class VelocityObstacle extends BaseObstacle{
         return obstacle.IsCollideWithVelocityObstacle(point);
     }
 
+    /*@Override
+    public List<Vector2D> FindVelocityOutsideVelocityObstacle(Vector2D currentVelocity, VelocityObstacleSide side)
+    {
+        List<Vector2D> velocities = obstacle.FindVelocityOutsideVelocityObstacle(currentVelocity, side);
+        if (velocities == null)
+            System.out.println("Velocities is null");
+        if (velocities.stream().anyMatch(v -> v.getNorm() > 51))
+            System.out.println("Some of the new velocities is very high" + obstacle.type());
+        return velocities;
+    }*/
+
     @Override
-    public Vector2D FindVelocityOutSideVelocityObstacle(Agent agent) {
-        return obstacle.FindVelocityOutSideVelocityObstacle(agent);
+    public Vector2D leftSide()
+    {
+        return obstacle.leftSide();
+    }
+
+    @Override
+    public Vector2D rightSide()
+    {
+        return obstacle.rightSide();
+    }
+
+    @Override
+    public Vector2D relativeObstaclePos()
+    {
+        return obstacle.relativeObstaclePos();
     }
 }

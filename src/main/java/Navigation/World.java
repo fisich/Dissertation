@@ -1,7 +1,7 @@
 package Navigation;
 
 import Navigation.Map.NavigationMap;
-import Rendering.WorldRenderer;
+import Application.Rendering.WorldRenderer;
 import org.apache.commons.math3.geometry.euclidean.twod.Vector2D;
 
 import java.util.ArrayList;
@@ -61,13 +61,19 @@ public class World {
             {
                 long beginTick = System.nanoTime();
                 // CodeHere
-                for (Agent agent: agents) {
-                    agent.Tick(FPS);
-                }
+                //for (Agent agent: agents) {
+                //    agent.Tick(FPS);
+                //}
                 long elapsed = beginTick - System.nanoTime();
                 long tickToWait = targetTime - elapsed / 1000000;
                 Thread.sleep(tickToWait);
             }
         });
+    }
+
+    public void SendTicks() {
+        for (Agent agent: agents) {
+            agent.Tick(60);
+        }
     }
 }

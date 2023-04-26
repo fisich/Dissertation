@@ -84,9 +84,9 @@ public class AStarPathFinding {
     {
         List<PathNode> neighborNodes = new ArrayList<>();
         int availableMinX = (source.position.getX() - _agentMapRadius) >= 0 ? -1 : 0;
-        int availableMaxX = (source.position.getX() + _agentMapRadius) < world.map.sizeX ? 1 : 0;
+        int availableMaxX = (source.position.getX() + _agentMapRadius) < world.map.tilesX ? 1 : 0;
         int availableMinY = (source.position.getY() - _agentMapRadius) >= 0 ? -1 : 0;
-        int availableMaxY = (source.position.getY() + _agentMapRadius) < world.map.sizeY ? 1 : 0;
+        int availableMaxY = (source.position.getY() + _agentMapRadius) < world.map.tilesY ? 1 : 0;
         for (int i = availableMinX; i <= availableMaxX; i++ )
         {
             for (int j = availableMinY; j <= availableMaxY; j++)
@@ -116,7 +116,7 @@ public class AStarPathFinding {
         for (int i = -aroundArea; i <= aroundArea; i++)
         {
             double horizontalMapTilePosition = positionToCheck.getX() + i;
-            if (horizontalMapTilePosition < 0 || horizontalMapTilePosition > world.map.sizeX)
+            if (horizontalMapTilePosition < 0 || horizontalMapTilePosition > world.map.tilesX)
                 return true;
             if (world.map.tiles[(int)horizontalMapTilePosition][(int)positionToCheck.getY() + aroundArea].getPassPrice() < 0 ||
                     world.map.tiles[(int)horizontalMapTilePosition][(int)positionToCheck.getY() - aroundArea].getPassPrice() < 0)
@@ -125,7 +125,7 @@ public class AStarPathFinding {
         for (int j = -aroundArea + 1; j < aroundArea; j++)
         {
             double verticalMapTilePosition = positionToCheck.getY() + j;
-            if (verticalMapTilePosition < 0 || verticalMapTilePosition > world.map.sizeY)
+            if (verticalMapTilePosition < 0 || verticalMapTilePosition > world.map.tilesY)
                 return true;
             if (world.map.tiles[(int)positionToCheck.getX() + aroundArea][(int)verticalMapTilePosition].getPassPrice() < 0 ||
                     world.map.tiles[(int)positionToCheck.getX() - aroundArea][(int)verticalMapTilePosition].getPassPrice() < 0)

@@ -4,21 +4,24 @@ import javafx.scene.paint.Color;
 
 public class NavigationMap {
     public final int mapTileSize;
-    public final int sizeX, sizeY;
+    public final int tilesX, tilesY;
     public final NavigationMapTileInfo[][] tiles;
+    public final double sizeX, sizeY;
 
-    public NavigationMap(int mapTileSize, int sizeX, int sizeY) {
+    public NavigationMap(int mapTileSize, int tilesX, int tilesY) {
         this.mapTileSize = mapTileSize;
-        this.sizeX = sizeX;
-        this.sizeY = sizeY;
-        tiles = new NavigationMapTileInfo[sizeX][sizeY];
+        this.tilesX = tilesX;
+        this.tilesY = tilesY;
+        this.tiles = new NavigationMapTileInfo[tilesX][tilesY];
+        this.sizeX = tilesX * mapTileSize;
+        this.sizeY = tilesY * mapTileSize;
         ClearMapTilesInfo();
     }
 
     public void ClearMapTilesInfo()
     {
-        for (int i = 0; i < sizeX; i++){
-            for (int j = 0; j < sizeY; j++){
+        for (int i = 0; i < tilesX; i++){
+            for (int j = 0; j < tilesY; j++){
                 tiles[i][j] = new NavigationMapTileInfo();
             }
         }
