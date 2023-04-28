@@ -4,6 +4,7 @@ import Navigation.Agent;
 import Navigation.VelocityObstacle.BaseObstacle;
 import Navigation.VelocityObstacle.GenericVelocityObstacle;
 import Navigation.VelocityObstacle.GroupVelocityObstacle;
+import Navigation.VelocityObstacle.StaticVelocityObstacle;
 import Navigation.World;
 import Patterns.Observer.IMouseEventReceiver;
 import javafx.scene.canvas.Canvas;
@@ -53,6 +54,7 @@ public class WorldRenderer implements IMouseEventReceiver {
             DrawLine(agent.getPosition(), agent.getPosition().add(agent.getGoalVelocity()), Color.BLUE, 8);
             DrawLine(agent.getPosition(), agent.getPosition().add(agent.getVelocity()), Color.RED, 4);
             //}
+
             GroupVelocityObstacle agentVO = agent.GetVelocityObstacle();
             if (agentVO != null && agent._draw) {
                 for (GenericVelocityObstacle obstacle: agentVO.GetObstacles()) {
@@ -62,8 +64,6 @@ public class WorldRenderer implements IMouseEventReceiver {
                                     obstacle.leftSide().add(obstacle.relativeObstaclePos()).add(agent.getPosition()));
                             DrawLine(agent.getPosition().add(obstacle.relativeObstaclePos()),
                                     obstacle.rightSide().add(obstacle.relativeObstaclePos()).add(agent.getPosition()), Color.RED, 1);
-                            //DrawLine(agent.getPosition().add(obstacle.relativeObstaclePos().add(obstacle.leftSide())),
-                            //        obstacle.rightSide().add(obstacle.relativeObstaclePos()).add(agent.getPosition()));
                         } catch (ClassCastException ex) {
                             ex.printStackTrace();
                         }

@@ -2,6 +2,7 @@ package Navigation;
 
 import Navigation.Map.NavigationMap;
 import Application.Rendering.WorldRenderer;
+import javafx.scene.paint.Color;
 import org.apache.commons.math3.geometry.euclidean.twod.Vector2D;
 
 import java.util.ArrayList;
@@ -12,7 +13,7 @@ import java.util.concurrent.Future;
 
 public class World {
     public final NavigationMap map;
-    public final List<Agent> agents;
+    public List<Agent> agents;
     public WorldRenderer renderer;
     private ExecutorService exec;
     private Future simulationProcess = null;
@@ -48,27 +49,6 @@ public class World {
         int posX = (int)(Math.ceil(x / map.mapTileSize) - 1);
         int posY = (int)(Math.ceil(y / map.mapTileSize) - 1);
         return new Vector2D(posX,posY);
-    }
-
-    public void SimulateAgents()
-    {
-        if (simulationProcess != null && !simulationProcess.isDone())
-            return;
-        simulationProcess = exec.submit(() -> {
-            int FPS = 60;
-            long targetTime = 1000 / FPS;
-            while (true)
-            {
-                long beginTick = System.nanoTime();
-                // CodeHere
-                //for (Agent agent: agents) {
-                //    agent.Tick(FPS);
-                //}
-                long elapsed = beginTick - System.nanoTime();
-                long tickToWait = targetTime - elapsed / 1000000;
-                Thread.sleep(tickToWait);
-            }
-        });
     }
 
     public void SendTicks() {

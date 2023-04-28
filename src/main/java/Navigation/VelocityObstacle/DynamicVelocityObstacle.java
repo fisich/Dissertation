@@ -12,15 +12,12 @@ import static MathExtensions.Vector2DExtension.*;
 public class DynamicVelocityObstacle extends BaseObstacle{
 
     private final double _minkowskiRadius;
-    private final Vector2D _relativeBPosition;
 
     public DynamicVelocityObstacle(Agent A, Agent B) {
-        // RVO
-        _relativeObstaclePos = B.getVelocity();//.add(A.getVelocity()).scalarMultiply(0.5d);
         _minkowskiRadius = (B.radius + A.radius);
         double minkowskiRadiusSq = _minkowskiRadius * _minkowskiRadius;
-        _relativeBPosition = B.getPosition().subtract(A.getPosition());
-        double distanceBetweenAgentsSq = Vector2D.distanceSq(B.getPosition(), A.getPosition()); // TODO: vecBetweenAgents?
+        Vector2D _relativeBPosition = B.getPosition().subtract(A.getPosition());
+        double distanceBetweenAgentsSq = Vector2D.distanceSq(B.getPosition(), A.getPosition());
         double distanceBetweenAgents = FastMath.sqrt(distanceBetweenAgentsSq);
         if (distanceBetweenAgentsSq < minkowskiRadiusSq) {
             throw new RuntimeException("Tricky collision: inside dynamic");
@@ -40,14 +37,33 @@ public class DynamicVelocityObstacle extends BaseObstacle{
         _leftSide = RotateVector(tangentVec, sin, cos);
         if (_leftSide.isNaN() || _rightSide.isNaN())
             System.out.println("Dynamic VO side is Nan");
+        // VO
+        Vector2D VOrelativeObstaclePos = B.getVelocity();
+        // RVO
+        Vector2D RVOrelativeObstaclePos = B.getVelocity().add(A.getVelocity()).scalarMultiply(0.5d);
+        // HRVO
+        if (CalculateDistanceToLine(A.getVelocity(), B.getVelocity(), B.getVelocity().add(leftSide()))
+        < CalculateDistanceToLine(A.getVelocity(), B.getVelocity(), B.getVelocity().add(rightSide())))
+        {
+            // Левая сторона ближе, делаем ее менее привлекательной
+            _relativeObstaclePos = GetLinesCross(VOrelativeObstaclePos, VOrelativeObstaclePos.add(leftSide()),
+                    RVOrelativeObstaclePos, RVOrelativeObstaclePos.add(rightSide()));
+        }
+        else
+        {
+            // Правая сторона ближе, делаем ее менее привлекательной
+            _relativeObstaclePos = GetLinesCross(VOrelativeObstaclePos, VOrelativeObstaclePos.add(rightSide()),
+                    RVOrelativeObstaclePos, RVOrelativeObstaclePos.add(leftSide()));
+        }
+        _relativeObstaclePos = RVOrelativeObstaclePos;
     }
 
     @Override
     public boolean IsCollideWithVelocityObstacle(Vector2D point) {
-            // Честный подсчет, преобразовывать точку point не надо
-            return IsPointInsideTriangle(point, _relativeObstaclePos,
-                    _leftSide.add(_relativeObstaclePos),
-                    _rightSide.add(_relativeObstaclePos));
+        // Честный подсчет, преобразовывать точку point не надо
+        return IsPointInsideTriangle(point, _relativeObstaclePos,
+                _leftSide.add(_relativeObstaclePos),
+                _rightSide.add(_relativeObstaclePos));
     }
 
     private static boolean IsPointInsideTriangle(Vector2D point, Vector2D A, Vector2D B, Vector2D C)

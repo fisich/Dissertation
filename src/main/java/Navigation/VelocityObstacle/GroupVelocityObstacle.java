@@ -15,14 +15,16 @@ public class GroupVelocityObstacle {
     private List<GenericVelocityObstacle> _velocityObstacles;
     private NavigationMap _map;
     private Agent _origin;
+    private List<StaticVelocityObstacle> _mapObstacles;
 
-    public GroupVelocityObstacle(Agent origin, List<Agent> others, NavigationMap navigationMap) {
+    public GroupVelocityObstacle(Agent origin, List<Agent> others, NavigationMap navigationMap, List<StaticVelocityObstacle> obstacles) {
         // Отсортированные против часовой стрелки VO
         _origin = origin;
         _velocityObstacles = SortAgents(origin, others).stream().map(
                 b -> new GenericVelocityObstacle(_origin, b)
         ).collect(Collectors.toCollection(LinkedList::new));
         _map = navigationMap;
+        _mapObstacles = obstacles;
     }
 
     public boolean IsCollideWithVelocityObstacle(Vector2D point) {
@@ -30,6 +32,11 @@ public class GroupVelocityObstacle {
         if (velocityOnMap.getX() <= _origin.radius || velocityOnMap.getX() >= (_map.sizeX - _origin.radius) ||
                 velocityOnMap.getY() <= _origin.radius || velocityOnMap.getY() >= (_map.sizeY - _origin.radius))
             return true;
+        for (StaticVelocityObstacle obstacle: _mapObstacles)
+        {
+            if (obstacle.IsCollideWithVelocityObstacle(point))
+                return true;
+        }
         for (GenericVelocityObstacle obstacle: _velocityObstacles) {
             if (obstacle.IsCollideWithVelocityObstacle(point))
                 return true;
@@ -54,40 +61,33 @@ public class GroupVelocityObstacle {
         {
             Vector2D vel = RotateVector(currentVelocity, 0.261799 * i);
             velocities.add(vel);
-            //velocities.add(vel.scalarMultiply(0.5d));
+            velocities.add(vel.scalarMultiply(0.5d));
         }
-        /*for (GenericVelocityObstacle obstacle: _velocityObstacles) {
-            velocities = Stream.concat(velocities.stream(),
-                    obstacle.FindVelocityOutsideVelocityObstacle(currentVelocity, IVelocityObstacle.VelocityObstacleSide.LEFT).stream())
-            .collect(Collectors.toList());
-            //velocities = Stream.concat(velocities.stream(),
-            //        obstacle.FindVelocityOutsideVelocityObstacle(currentVelocity, IVelocityObstacle.VelocityObstacleSide.RIGHT).stream())
-            //        .collect(Collectors.toList());
-        }*/
         // filter out of screen
         velocities = velocities.stream().filter(vel -> {
             Vector2D velocityOnMap = _origin.getPosition().add(vel);
             return (velocityOnMap.getX() > _origin.radius && velocityOnMap.getX() < (_map.sizeX - _origin.radius) &&
             velocityOnMap.getY() > _origin.radius && velocityOnMap.getY() < (_map.sizeY - _origin.radius));
         }).collect(Collectors.toList());
-        // filter for static obstacles
-        List<GenericVelocityObstacle> staticVelocityObstacles = _velocityObstacles.stream()
-                .filter(obs -> obs.type() == BaseObstacle.VelocityObstacleType.STATIC)
+
+        // filter for all static obstacles
+        List<BaseObstacle> staticVelocityObstacles = Stream.concat(_velocityObstacles.stream()
+                .filter(obs -> obs.type() == BaseObstacle.VelocityObstacleType.STATIC), _mapObstacles.stream())
                 .collect(Collectors.toList());
-        // filter for all
         velocities = velocities.stream().filter(vel -> {
-            for (GenericVelocityObstacle obstacle: staticVelocityObstacles) {
+            for (BaseObstacle obstacle: staticVelocityObstacles) {
                 if (obstacle.IsCollideWithVelocityObstacle(vel))
                     return false;
             }
             return true;
-            //return !IsCollideWithVelocityObstacle(vel);
         }).collect(Collectors.toList());
 
-        /*List<Map.Entry<Vector2D, Integer>> velocityAndCollisionsCount = new ArrayList<>();
+        List<Map.Entry<Vector2D, Integer>> velocityAndCollisionsCount = new ArrayList<>();
         for (Vector2D vel:velocities) {
             velocityAndCollisionsCount.add(new AbstractMap.SimpleEntry<>(vel, CollisionsCount(vel)));
         }
+        if (velocityAndCollisionsCount.isEmpty())
+            return Vector2D.ZERO;
         int min = velocityAndCollisionsCount.stream()
                 .min(Comparator.comparingInt(Map.Entry::getValue))
                 .get().getValue();

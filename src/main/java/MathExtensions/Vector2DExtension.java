@@ -34,10 +34,24 @@ public class Vector2DExtension {
         return new LineEquation(m, b);
     }
 
+    public static double CalculateDistanceToLine(Vector2D point, Vector2D start, Vector2D end)
+    {
+        LineEquation equation = GetLineEquation(start, end);
+        // y = -1/m*x - уравнение перпендикуляра
+        // Точка пересечения перпендикуляра с прямой
+        // -x/m=mx+b -> x = -mb/(m^2+1) 100% OK
+        double mb = equation.M * equation.B;
+        double m_m_plus1 = equation.M * equation.M + 1;
+        double crossNormalX = -mb / m_m_plus1;
+        double crossNormalY = equation.M * crossNormalX + equation.B;
+        return Vector2D.distance(point, new Vector2D(crossNormalX, crossNormalY));
+    }
+
     public static double GetAngleBetweenVectors(Vector2D v1, Vector2D v2) throws MathArithmeticException {
         double normProduct = v1.getNorm() * v2.getNorm();
         if (normProduct == 0.0D) {
-            throw new MathArithmeticException(LocalizedFormats.ZERO_NORM);
+            return Double.POSITIVE_INFINITY;
+            //throw new MathArithmeticException(LocalizedFormats.ZERO_NORM);
         }
         double dotProduct = v1.dotProduct(v2);
         if (Math.abs(normProduct - dotProduct) < 0.00001d )
@@ -84,25 +98,26 @@ public class Vector2DExtension {
         }
     }
 
-    public static boolean IsVecCrossCircle(Vector2D vec, Vector2D circleCenter, double radius)
+    public static boolean IsVecCrossCircle(Vector2D start, Vector2D end, Vector2D circleCenter, double radius)
     {
-        // Если движется прямо на препятствие (скорость внутри VO)
-        if (Vector2D.distanceSq(vec, circleCenter) <= radius * radius)
+        if (Vector2D.distanceSq(end.subtract(start), circleCenter) <= radius * radius)
             return true;
-            // Если скорость вне VO и агент также находится вне VO, либо движется изнутри VO
-        else if (Vector2D.distanceSq(vec, circleCenter) > vec.getNormSq())
+        Vector2D diff = end.subtract(start);
+        double a = diff.getX() * diff.getX() + diff.getY() * diff.getY();
+        double b = 2 * (diff.getX() * (start.getX() - circleCenter.getX()) + diff.getY() * (start.getY() - circleCenter.getY()));
+        double c = (start.getX() - circleCenter.getX()) * (start.getX() - circleCenter.getX())
+                + (start.getY() - circleCenter.getY()) * (start.getY() - circleCenter.getY()) - radius * radius;
+        double discriminant = b * b - 4 * a * c;
+        if (discriminant < 0) {
             return false;
-        // Иначе нужно проверить, что траектория движения пересекает область препятствий
-        // Т.е. есть решения системы y = mx + b и (x-x_c)^2+(y-y_c)^2=r^2
-        // Так как считаем относительно самого агента, его скорость не смещена -> b = 0
-        // Нужно проверить, что D >= 0:
-        // D = (2*x_c+2*m*y_c)^2 - 4(1+m^2)(x_c^2+y_c^2-r^2)
-        // После оптицизации остается проверка:
-        // (x_c+m*y_c)^2 >= (1+m^2)(x_c^2+y_c^2-r^2)
-        double m = GetLineEquation(Vector2D.ZERO, vec).M;
-        double xC_plus_m_yC = circleCenter.getX() + m * circleCenter.getY();
-        double discriminant = (xC_plus_m_yC * xC_plus_m_yC) - (1 + m*m)*(circleCenter.getX() * circleCenter.getX()
-                + circleCenter.getY() * circleCenter.getY() - radius * radius);
-        return discriminant >= 0;
+        } else {
+            double t1 = (-b + FastMath.sqrt(discriminant))/(2d*a);
+            double t2 = (-b - FastMath.sqrt(discriminant))/(2d*a);
+            if ((t1 >= 0 && t1 <= 1) || (t2 >= 0 && t2 <= 1)) {
+                return true;
+            } else {
+                return false;
+            }
+        }
     }
 }

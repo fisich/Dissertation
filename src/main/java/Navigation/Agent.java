@@ -1,8 +1,11 @@
 package Navigation;
 
+import Navigation.Map.NavigationMapTileInfo;
 import Navigation.PathFinding.AStarPathFinding;
 import Navigation.PathFinding.PathProcessing;
+import Navigation.VelocityObstacle.BaseObstacle;
 import Navigation.VelocityObstacle.GroupVelocityObstacle;
+import Navigation.VelocityObstacle.StaticVelocityObstacle;
 import javafx.scene.paint.Color;
 import org.apache.commons.math3.exception.MathArithmeticException;
 import org.apache.commons.math3.exception.util.LocalizedFormats;
@@ -19,14 +22,17 @@ public class Agent {
     public double MaxVelocity = 50;
     public final double radius;
     public  Color color;
-    private World _worldRef;
+    private final World _worldRef;
     public double _viewRadius;
     public final boolean _draw;
     private GroupVelocityObstacle _VO = null;
     private Queue<Vector2D> route = new LinkedList<>();
     private boolean hasCompleteMovement = true;
     private long ticksToUseBestVelocity;
-
+    private long _movementStartTime;
+    public long movementTime;
+    public List<StaticVelocityObstacle> mapObstacles;
+    public double pathLength = 0;
 
 
     public Agent(double posX, double posY, double radius, Color color, World worldRef, boolean DRAW) {
@@ -35,7 +41,7 @@ public class Agent {
         this.color = color;
         _position = new Vector2D(posX, posY);
         this._worldRef = worldRef;
-        _goalVelocity = new Vector2D(0,0);
+        _goalVelocity = _currentVelocity = new Vector2D(0,0);
         _viewRadius = MaxVelocity*3;
         _draw = DRAW;
     }
@@ -46,10 +52,11 @@ public class Agent {
         {
             AStarPathFinding pathFinding = new AStarPathFinding(_worldRef);
             List<Vector2D> tempRoute = pathFinding.findRoute(this, new Vector2D(posX, posY));
-            tempRoute = tempRoute.stream().map(pos -> _worldRef.ToCenterOfWorldPoint2D(pos)).collect(Collectors.toList());
+            tempRoute = tempRoute.stream().map(_worldRef::ToCenterOfWorldPoint2D).collect(Collectors.toList());
             route = new LinkedList<>(PathProcessing.StraightenThePath(tempRoute));
             hasCompleteMovement = false;
             ticksToUseBestVelocity = System.currentTimeMillis();
+            _movementStartTime = System.currentTimeMillis();
         }
     }
 
@@ -65,6 +72,7 @@ public class Agent {
             if(route.isEmpty()) {
                 hasCompleteMovement = true;
                 _currentVelocity = _goalVelocity = Vector2D.ZERO;
+                movementTime = System.currentTimeMillis() - _movementStartTime;
                 return;
             }
             else
@@ -72,24 +80,22 @@ public class Agent {
         }
         _goalVelocity = nextPoint.subtract(_position).normalize().scalarMultiply(MaxVelocity);
         List<Agent> agents = GetAgentsAround();
-        if (agents.size() > 0) {
-            _VO = new GroupVelocityObstacle(this, agents, _worldRef.map);
-            if (!_VO.IsCollideWithVelocityObstacle(_goalVelocity)) {
-                if (System.currentTimeMillis() - ticksToUseBestVelocity > 10) {
-                    _currentVelocity = _goalVelocity;
-                }
-            } else {
-                ticksToUseBestVelocity = System.currentTimeMillis();
-                if (_VO.IsCollideWithVelocityObstacle(_currentVelocity)) {
-                    _currentVelocity = _VO.FindBestVelocityOutsideObstacles(_currentVelocity);
-                    if (_VO.IsCollideWithVelocityObstacle(_currentVelocity))
-                        System.out.println("WTF " + _currentVelocity);
-                }
+        _VO = new GroupVelocityObstacle(this, agents, _worldRef.map, GetStaticObstacleAround());
+        if(_currentVelocity.getNorm() == 0)
+            _currentVelocity = _goalVelocity;
+        if (!_VO.IsCollideWithVelocityObstacle(_goalVelocity)) {
+            if (System.currentTimeMillis() - ticksToUseBestVelocity > 10) {
+                _currentVelocity = _goalVelocity;
             }
         } else {
-            _currentVelocity = _goalVelocity;
+            ticksToUseBestVelocity = System.currentTimeMillis();
+            if (_VO.IsCollideWithVelocityObstacle(_currentVelocity)) {
+                _currentVelocity = _VO.FindBestVelocityOutsideObstacles(_currentVelocity);
+            }
         }
-        _position = _position.add(_currentVelocity.scalarMultiply(1d / FPS));
+        Vector2D posMove = _currentVelocity.scalarMultiply(1d / FPS);
+        _position = _position.add(posMove);
+        pathLength += posMove.getNorm();
     }
 
     private boolean isPositionReached(Vector2D point)
@@ -105,6 +111,34 @@ public class Agent {
                                 .subtract(getPosition())
                                 .getNorm() < _viewRadius)
                 .collect(Collectors.toList());
+    }
+
+    private List<StaticVelocityObstacle> GetStaticObstacleAround()
+    {
+        Vector2D mapPosition = _worldRef.ToMapPoint2D(getPosition());
+        int leftX = (int) (mapPosition.getX() - radius - MaxVelocity/_worldRef.map.mapTileSize);
+        leftX = Math.max(0, leftX);
+        int rightX = (int) (mapPosition.getX() + radius + MaxVelocity/_worldRef.map.mapTileSize);
+        rightX = Math.min(_worldRef.map.tilesX, rightX);
+        int topY = (int) (mapPosition.getY() - radius - MaxVelocity/_worldRef.map.mapTileSize);
+        topY = Math.max(0, topY);
+        int bottomY = (int) (mapPosition.getY() + radius + MaxVelocity/_worldRef.map.mapTileSize);
+        bottomY = Math.min(_worldRef.map.tilesY, bottomY);
+        mapObstacles = new ArrayList<>();
+
+        for (int i = leftX; i < rightX; i++)
+        {
+            for (int j = topY; j < bottomY; j++)
+                if (_worldRef.map.tiles[i][j].getPassPrice() < 0) {
+                    Vector2D topLeftPos = _worldRef.FromMapVec2DToWorldPoint2D(i, j)
+                            .subtract(getPosition());
+                    mapObstacles.add(new StaticVelocityObstacle(topLeftPos, radius));
+                    mapObstacles.add(new StaticVelocityObstacle(topLeftPos.add(new Vector2D(0, _worldRef.map.mapTileSize)), radius));
+                    mapObstacles.add(new StaticVelocityObstacle(topLeftPos.add(new Vector2D(_worldRef.map.mapTileSize, 0)), radius));
+                    mapObstacles.add(new StaticVelocityObstacle(topLeftPos.add(new Vector2D(_worldRef.map.mapTileSize, _worldRef.map.mapTileSize)), radius));
+                }
+        }
+        return mapObstacles;
     }
 
     public static double angleBetweenVectors(Vector2D v1, Vector2D v2) throws MathArithmeticException{
