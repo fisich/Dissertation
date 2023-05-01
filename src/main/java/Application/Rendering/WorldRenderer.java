@@ -42,23 +42,22 @@ public class WorldRenderer implements IMouseEventReceiver {
                 System.out.println("out of screen");
             if (agent.getPosition().isNaN())
                 System.out.println("agent pos is nan");
-            if (!agent._draw) {
-                //gc.setFill(Color.YELLOW);
+            if (agent._draw) {
                 gc.setStroke(Color.BLACK);
                 gc.setLineWidth(1);
                 gc.strokeOval(agent.getPosition().getX() - agent.radius * 2, agent.getPosition().getY() - agent.radius * 2, agent.radius * 4, agent.radius * 4);
             }
             gc.setFill(agent.color);
             gc.fillOval(agent.getPosition().getX() - agent.radius, agent.getPosition().getY() - agent.radius, agent.radius * 2, agent.radius * 2);
-            //if (agent._draw) {
-            DrawLine(agent.getPosition(), agent.getPosition().add(agent.getGoalVelocity()), Color.BLUE, 8);
-            DrawLine(agent.getPosition(), agent.getPosition().add(agent.getVelocity()), Color.RED, 4);
-            //}
+            if (agent._draw) {
+                DrawLine(agent.getPosition(), agent.getPosition().add(agent.getGoalVelocity()), Color.BLUE, 8);
+                DrawLine(agent.getPosition(), agent.getPosition().add(agent.getVelocity()), Color.RED, 4);
+            }
 
             GroupVelocityObstacle agentVO = agent.GetVelocityObstacle();
             if (agentVO != null && agent._draw) {
                 for (GenericVelocityObstacle obstacle: agentVO.GetObstacles()) {
-                    if (obstacle.type() == BaseObstacle.VelocityObstacleType.DYNAMIC) {
+                    if (obstacle.getType() == BaseObstacle.VelocityObstacleType.DYNAMIC) {
                         try {
                             DrawLine(agent.getPosition().add(obstacle.relativeObstaclePos()),
                                     obstacle.leftSide().add(obstacle.relativeObstaclePos()).add(agent.getPosition()));

@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class PathProcessing {
     public static List<Vector2D> StraightenThePath(List<Vector2D> originalPath)
     {
-        if (originalPath.size() < 2)
+        if (originalPath.size() <= 2)
             return originalPath;
         List<Vector2D> straightenPath = new ArrayList<>();
         AtomicReference<Vector2D> prevDirection = new AtomicReference<>(originalPath.get(1).subtract(originalPath.get(0)));

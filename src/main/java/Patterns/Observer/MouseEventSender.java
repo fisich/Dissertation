@@ -7,7 +7,7 @@ public abstract class MouseEventSender implements IMouseEventSender {
     protected List<IMouseEventReceiver> observers;
 
     public MouseEventSender() {
-        this.observers = new ArrayList<IMouseEventReceiver>();
+        this.observers = new ArrayList<>();
     }
 
     @Override

@@ -6,9 +6,8 @@ import org.apache.commons.math3.geometry.euclidean.twod.Vector2D;
 import org.apache.commons.math3.util.FastMath;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
-public class GenericVelocityObstacle extends BaseObstacle{
+public class GenericVelocityObstacle extends BaseObstacle {
     private BaseObstacle obstacle;
 
     public GenericVelocityObstacle(Agent A, Agent B) {
@@ -17,21 +16,16 @@ public class GenericVelocityObstacle extends BaseObstacle{
         double minkowskiRadiusSq = minkowskiRadius * minkowskiRadius;
         double distanceBetweenAgentsSq = Vector2D.distanceSq(B.getPosition(), A.getPosition());
         // Скорость такая, что считаем статичным
-        if (dynamicObstacleVelocity.getNorm() < 0.01)
-        {
+        if (dynamicObstacleVelocity.getNorm() < 0.01 || A.getPosition().subtract(B.getPosition()).getNorm() <= 2.1d * Math.max(A.radius, B.radius)) {
             obstacle = new StaticVelocityObstacle(A, B);
         }
         // TODO: Когда внутри VO, считаем ли мы объект как Static????
-        else if (distanceBetweenAgentsSq < minkowskiRadiusSq)
-        {
+        else if (distanceBetweenAgentsSq < minkowskiRadiusSq) {
             obstacle = new StaticVelocityObstacle(A, B);
             System.out.println("Tricky collision: " + (FastMath.sqrt(minkowskiRadiusSq - distanceBetweenAgentsSq)) + "  " + LocalDateTime.now().toString());
-        }
-        else
-        {
+        } else {
             obstacle = new DynamicVelocityObstacle(A, B);
         }
-        this._type = obstacle.type();
     }
 
     @Override
@@ -39,32 +33,27 @@ public class GenericVelocityObstacle extends BaseObstacle{
         return obstacle.IsCollideWithVelocityObstacle(point);
     }
 
-    /*@Override
-    public List<Vector2D> FindVelocityOutsideVelocityObstacle(Vector2D currentVelocity, VelocityObstacleSide side)
-    {
-        List<Vector2D> velocities = obstacle.FindVelocityOutsideVelocityObstacle(currentVelocity, side);
-        if (velocities == null)
-            System.out.println("Velocities is null");
-        if (velocities.stream().anyMatch(v -> v.getNorm() > 51))
-            System.out.println("Some of the new velocities is very high" + obstacle.type());
-        return velocities;
-    }*/
+    public Vector2D GetCrossPointWithClosestSide(Vector2D currentVelocity) {
+        return obstacle.GetCrossPointWithClosestSide(currentVelocity);
+    }
 
     @Override
-    public Vector2D leftSide()
-    {
+    public Vector2D leftSide() {
         return obstacle.leftSide();
     }
 
     @Override
-    public Vector2D rightSide()
-    {
+    public Vector2D rightSide() {
         return obstacle.rightSide();
     }
 
     @Override
-    public Vector2D relativeObstaclePos()
-    {
+    public Vector2D relativeObstaclePos() {
         return obstacle.relativeObstaclePos();
+    }
+
+    @Override
+    public VelocityObstacleType getType() {
+        return obstacle.getType();
     }
 }

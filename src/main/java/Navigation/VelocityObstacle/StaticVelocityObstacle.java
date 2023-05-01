@@ -13,23 +13,8 @@ public class StaticVelocityObstacle extends BaseObstacle{
         _relativeObstaclePos = B.getPosition().subtract(A.getPosition());
         minkowskiRadius = (B.radius + A.radius);
         double distanceBetweenAgents = _relativeObstaclePos.getNorm();
-        // Длина касательной к окружности
-        double tangentLength = 0;
-        if (distanceBetweenAgents > minkowskiRadius)
-            tangentLength = FastMath.sqrt(distanceBetweenAgents * distanceBetweenAgents - minkowskiRadius * minkowskiRadius);
-        else
-            System.out.println("oooops");
-            //throw new RuntimeException("Error, agent inside static velocity");
-        // sin и cos для поворота прямой, соединяющей центры агента и препятствия в сторону касательной
-        double sin = minkowskiRadius / distanceBetweenAgents;
-        double cos = tangentLength / distanceBetweenAgents;
-        // Текущая величина скорости
-        double velValue = A.getVelocity().getNorm();
-        Vector2D tangentVec = _relativeObstaclePos.normalize().scalarMultiply(velValue);
-        _rightSide = RotateVector(tangentVec, -sin, cos);
-        _leftSide = RotateVector(tangentVec, sin, cos);
-        if (_leftSide.isNaN() || _rightSide.isNaN())
-            System.out.println("ctor static");
+        if (distanceBetweenAgents <=  minkowskiRadius)
+            throw new RuntimeException("Error, agent inside static velocity");
     }
 
     public StaticVelocityObstacle(Vector2D position, double radius)
@@ -44,7 +29,7 @@ public class StaticVelocityObstacle extends BaseObstacle{
     }
 
     @Override
-    public VelocityObstacleType type()
+    public VelocityObstacleType getType()
     {
         return VelocityObstacleType.STATIC;
     }

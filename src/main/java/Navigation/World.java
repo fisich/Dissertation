@@ -2,26 +2,19 @@ package Navigation;
 
 import Navigation.Map.NavigationMap;
 import Application.Rendering.WorldRenderer;
-import javafx.scene.paint.Color;
 import org.apache.commons.math3.geometry.euclidean.twod.Vector2D;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 public class World {
     public final NavigationMap map;
     public List<Agent> agents;
     public WorldRenderer renderer;
-    private ExecutorService exec;
-    private Future simulationProcess = null;
 
     public World(int mapTileSize, int mapTilesX, int mapTilesY) {
         map = new NavigationMap(mapTileSize, mapTilesX, mapTilesY);
         agents = new ArrayList<>();
-        exec = Executors.newSingleThreadExecutor();
     }
 
     public Vector2D ToWorldPoint2D(Vector2D pos)

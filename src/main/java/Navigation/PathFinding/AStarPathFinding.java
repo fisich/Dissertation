@@ -29,7 +29,7 @@ public class AStarPathFinding {
         _agentMapRadius = a.radius / (double) world.map.mapTileSize;
         Queue<PathNode> queue = new PriorityQueue<>(priceComparator);
         visitedNodes = new HashMap<>();
-        visitedNodes.put(startNode, null);
+        //visitedNodes.put(startNode, null);
         PathNode destinationNode = null;
         queue.add(startNode);
         while (queue.size() > 0)
@@ -98,7 +98,7 @@ public class AStarPathFinding {
                     if (!IsAgentCollideAtPosition(neighborPos)) {
                         PathNode neighborNode = new PathNode(source.price + price
                                 + GetHeuristicLength(neighborPos, _mapDestination) * 2, neighborPos);
-                        if (!visitedNodes.containsKey(neighborNode))
+                        //if (!visitedNodes.containsKey(neighborNode))
                             neighborNodes.add(neighborNode);
                     }
                 }
@@ -114,11 +114,11 @@ public class AStarPathFinding {
 
     private boolean IsAgentCollideAtPosition(Vector2D positionToCheck)
     {
-        for (int i = (int) (positionToCheck.getX() - Math.ceil(_agentMapRadius)); i <= (int) (positionToCheck.getX() - Math.ceil(_agentMapRadius)); i++)
+        for (int i = (int) (positionToCheck.getX() - Math.ceil(_agentMapRadius)); i < (int) (positionToCheck.getX() + Math.ceil(_agentMapRadius)); i++)
         {
             if (i < 0 || i > world.map.tilesX)
                 return true;
-            for (int j = (int)(positionToCheck.getX() - Math.ceil(_agentMapRadius)); j <= (int) (positionToCheck.getX() - Math.ceil(_agentMapRadius)); j++)
+            for (int j = (int)(positionToCheck.getY() - Math.ceil(_agentMapRadius)); j < (int) (positionToCheck.getY() + Math.ceil(_agentMapRadius)); j++)
             {
                 if (j < 0 || j > world.map.tilesY)
                     return true;
@@ -130,25 +130,6 @@ public class AStarPathFinding {
             }
         }
         return false;
-        /*for (int i = -aroundArea; i <= aroundArea; i++)
-        {
-            double horizontalMapTilePosition = positionToCheck.getX() + i;
-            if (horizontalMapTilePosition < 0 || horizontalMapTilePosition > world.map.tilesX)
-                return true;
-            if (world.map.tiles[(int)horizontalMapTilePosition][(int)positionToCheck.getY() + aroundArea].getPassPrice() < 0 ||
-                    world.map.tiles[(int)horizontalMapTilePosition][(int)positionToCheck.getY() - aroundArea].getPassPrice() < 0)
-                return true;
-        }
-        for (int j = -aroundArea + 1; j < aroundArea; j++)
-        {
-            double verticalMapTilePosition = positionToCheck.getY() + j;
-            if (verticalMapTilePosition < 0 || verticalMapTilePosition > world.map.tilesY)
-                return true;
-            if (world.map.tiles[(int)positionToCheck.getX() + aroundArea][(int)verticalMapTilePosition].getPassPrice() < 0 ||
-                    world.map.tiles[(int)positionToCheck.getX() - aroundArea][(int)verticalMapTilePosition].getPassPrice() < 0)
-                return true;
-        }
-        return false;*/
     }
 
     private final static Comparator<PathNode> priceComparator = (o1, o2) -> (int) (o1.price - o2.price);
