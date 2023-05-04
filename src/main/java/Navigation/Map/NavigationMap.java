@@ -7,31 +7,25 @@ import org.apache.commons.math3.geometry.euclidean.twod.Vector2D;
 import static MathExtensions.Vector2DExtension.GetLineEquation;
 
 public class NavigationMap {
-    public final int mapTileSize;
-    public final int tilesX, tilesY;
-    public final NavigationMapTileInfo[][] tiles;
-    public final double sizeX, sizeY;
+    private final NavigationMapTileInfo[][] tiles;
+    private final NavigationMapModel _mapModel;
 
     public NavigationMap(int mapTileSize, int tilesX, int tilesY) {
-        this.mapTileSize = mapTileSize;
-        this.tilesX = tilesX;
-        this.tilesY = tilesY;
+        _mapModel = new NavigationMapModel(mapTileSize, tilesX, tilesY);
         this.tiles = new NavigationMapTileInfo[tilesX][tilesY];
-        this.sizeX = tilesX * mapTileSize;
-        this.sizeY = tilesY * mapTileSize;
         ClearMapTilesInfo();
     }
 
     public void ClearMapTilesInfo()
     {
-        for (int i = 0; i < tilesX; i++){
-            for (int j = 0; j < tilesY; j++){
+        for (int i = 0; i < _mapModel.getTilesX(); i++){
+            for (int j = 0; j < _mapModel.getTilesY(); j++){
                 tiles[i][j] = new NavigationMapTileInfo();
             }
         }
     }
 
-    public boolean IsPathBetweenLinesClear(Vector2D start, Vector2D end)
+    public boolean IsPathAtLineClear(Vector2D start, Vector2D end)
     {
         Vector2D _start = start, _end = end;
         Vector2DExtension.LineEquation equation = GetLineEquation(start, end);
@@ -73,4 +67,11 @@ public class NavigationMap {
             tiles[posX][posY].UpdateInfo(color, passPrice);
         }
     }
+
+    public NavigationMapTileInfo getTile(int x, int y)
+    {
+        return tiles[x][y];
+    }
+
+    public NavigationMapModel getModel() { return _mapModel; }
 }

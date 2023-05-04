@@ -1,10 +1,6 @@
 package Application.Rendering;
 
 import Navigation.Agent;
-import Navigation.VelocityObstacle.BaseObstacle;
-import Navigation.VelocityObstacle.GenericVelocityObstacle;
-import Navigation.VelocityObstacle.GroupVelocityObstacle;
-import Navigation.VelocityObstacle.StaticVelocityObstacle;
 import Navigation.World;
 import Patterns.Observer.IMouseEventReceiver;
 import javafx.scene.canvas.Canvas;
@@ -20,28 +16,25 @@ public class WorldRenderer implements IMouseEventReceiver {
     public WorldRenderer(World world, Canvas canvas) {
         this._world = world;
         this._canvas = canvas;
-        _world.renderer = this;
         gc = _canvas.getGraphicsContext2D();
     }
 
     public void Redraw()
     {
-        for (int i = 0; i < _world.map.tilesX; i++)
+        for (int i = 0; i < _world.getMapModel().getTilesX(); i++)
         {
-            for (int j = 0; j < _world.map.tilesY; j++)
+            for (int j = 0; j < _world.getMapModel().getTilesY(); j++)
             {
-                gc.setFill(_world.map.tiles[i][j].getColor());
+                gc.setFill(_world.getMap().getTile(i,j).getColor());
                 Vector2D pos = _world.FromMapVec2DToWorldPoint2D(i, j);
-                gc.fillRect(pos.getX(), pos.getY(), _world.map.mapTileSize, _world.map.mapTileSize);
+                gc.fillRect(pos.getX(), pos.getY(), _world.getMapModel().getTileSize(), _world.getMapModel().getTileSize());
             }
         }
-        for (Agent agent: _world.agents) {
+        for (Agent agent: _world.agents()) {
             if (agent.getPosition().getX() > _canvas.getWidth() || agent.getPosition().getY() > _canvas.getHeight())
                 System.out.println("out of screen");
             if (agent.getPosition().getX() < 0 || agent.getPosition().getY() < 0)
                 System.out.println("out of screen");
-            if (agent.getPosition().isNaN())
-                System.out.println("agent pos is nan");
             if (agent._draw) {
                 gc.setStroke(Color.BLACK);
                 gc.setLineWidth(1);
@@ -52,22 +45,6 @@ public class WorldRenderer implements IMouseEventReceiver {
             if (agent._draw) {
                 DrawLine(agent.getPosition(), agent.getPosition().add(agent.getGoalVelocity()), Color.BLUE, 8);
                 DrawLine(agent.getPosition(), agent.getPosition().add(agent.getVelocity()), Color.RED, 4);
-            }
-
-            GroupVelocityObstacle agentVO = agent.GetVelocityObstacle();
-            if (agentVO != null && agent._draw) {
-                for (GenericVelocityObstacle obstacle: agentVO.GetObstacles()) {
-                    if (obstacle.getType() == BaseObstacle.VelocityObstacleType.DYNAMIC) {
-                        try {
-                            DrawLine(agent.getPosition().add(obstacle.relativeObstaclePos()),
-                                    obstacle.leftSide().add(obstacle.relativeObstaclePos()).add(agent.getPosition()));
-                            DrawLine(agent.getPosition().add(obstacle.relativeObstaclePos()),
-                                    obstacle.rightSide().add(obstacle.relativeObstaclePos()).add(agent.getPosition()), Color.RED, 1);
-                        } catch (ClassCastException ex) {
-                            ex.printStackTrace();
-                        }
-                    }
-                }
             }
         }
     }

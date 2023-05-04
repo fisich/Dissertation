@@ -20,7 +20,7 @@ import java.io.IOException;
 public class MainWindowController extends MouseEventSender {
 
     private final Stage rootStage;
-    private World _world;
+    private final World _world;
     private WorldRenderer _renderer;
     @FXML
     public Canvas mapCanvas;
@@ -32,8 +32,8 @@ public class MainWindowController extends MouseEventSender {
         Parent root = loader.load();
         rootStage.setScene(new Scene(root));
         _world = world;
-        mapCanvas.setWidth(_world.map.tilesX * _world.map.mapTileSize);
-        mapCanvas.setHeight(_world.map.tilesY * _world.map.mapTileSize);
+        mapCanvas.setWidth(_world.getMapModel().getTilesX() * _world.getMapModel().getTileSize());
+        mapCanvas.setHeight(_world.getMapModel().getTilesY() * _world.getMapModel().getTileSize());
     }
 
     public void start()
@@ -60,7 +60,7 @@ public class MainWindowController extends MouseEventSender {
     @FXML
     private void initialize()
     {
-        mapCanvas.setOnMouseClicked(event -> mouseDrawOnCanvas(event));
+        mapCanvas.setOnMouseClicked(this::mouseDrawOnCanvas);
     }
 
     public void mouseDrawOnCanvas(MouseEvent mouseEvent) {

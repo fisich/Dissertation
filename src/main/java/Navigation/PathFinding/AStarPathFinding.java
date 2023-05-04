@@ -7,29 +7,28 @@ import Navigation.World;
 import java.util.*;
 
 public class AStarPathFinding {
-    private final World world;
-    private Map<PathNode, PathNode> visitedNodes; // to, from
+    private final World _world;
+    private Map<PathNode, PathNode> _visitedNodes; // to, from
     private double _agentMapRadius;
     private Vector2D _mapDestination;
 
     public AStarPathFinding(World worldRef) {
-        this.world = worldRef;
+        this._world = worldRef;
     }
 
     public List<Vector2D> findRoute(Agent a, Vector2D destination)
     {
-        PathNode startNode = new PathNode(0, world.ToMapPoint2D(a.getPosition()));
-        _mapDestination = world.ToMapPoint2D(destination);
+        PathNode startNode = new PathNode(0, _world.ToMapPoint2D(a.getPosition()));
+        _mapDestination = _world.ToMapPoint2D(destination);
         if (startNode.position.equals(_mapDestination))
         {
             List<Vector2D> route = new ArrayList<>();
             route.add(_mapDestination);
             return new ArrayList<>();
         }
-        _agentMapRadius = a.radius / (double) world.map.mapTileSize;
+        _agentMapRadius = a.radius / (double) _world.getMapModel().getTileSize();
         Queue<PathNode> queue = new PriorityQueue<>(priceComparator);
-        visitedNodes = new HashMap<>();
-        //visitedNodes.put(startNode, null);
+        _visitedNodes = new HashMap<>();
         PathNode destinationNode = null;
         queue.add(startNode);
         while (queue.size() > 0)
@@ -50,11 +49,11 @@ public class AStarPathFinding {
             return null;
         List<Vector2D> pathNodes = new ArrayList<>();
         pathNodes.add(destinationNode.position);
-        PathNode temp = visitedNodes.get(destinationNode);
+        PathNode temp = _visitedNodes.get(destinationNode);
         while (temp.price > 0)
         {
             pathNodes.add(temp.position);
-            temp = visitedNodes.get(temp);
+            temp = _visitedNodes.get(temp);
         }
         Collections.reverse(pathNodes);
         return pathNodes;
@@ -63,17 +62,17 @@ public class AStarPathFinding {
     private boolean MarkAndCheckPriceForVisitedNode(PathNode nodeFrom, PathNode nodeTo)
     {
         boolean isNewPathNodeProfitable = false;
-        if (visitedNodes.containsKey(nodeTo))
+        if (_visitedNodes.containsKey(nodeTo))
         {
-            if (visitedNodes.get(nodeTo).price > nodeFrom.price)
+            if (_visitedNodes.get(nodeTo).price > nodeFrom.price)
             {
-                visitedNodes.put(nodeTo, nodeFrom);
+                _visitedNodes.put(nodeTo, nodeFrom);
                 isNewPathNodeProfitable = true;
             }
         }
         else
         {
-            visitedNodes.put(nodeTo, nodeFrom);
+            _visitedNodes.put(nodeTo, nodeFrom);
             isNewPathNodeProfitable = true;
         }
         return isNewPathNodeProfitable;
@@ -83,9 +82,9 @@ public class AStarPathFinding {
     {
         List<PathNode> neighborNodes = new ArrayList<>();
         int leftX = (source.position.getX() - _agentMapRadius - 1) >= 0 ? -1 : 0;
-        int rightX = (source.position.getX() + _agentMapRadius + 1) <= world.map.tilesX ? 1 : 0;
+        int rightX = (source.position.getX() + _agentMapRadius + 1) <= _world.getMapModel().getTilesX() ? 1 : 0;
         int topY = (source.position.getY() - _agentMapRadius - 1) >= 0 ? -1 : 0;
-        int bottomY = (source.position.getY() + _agentMapRadius + 1) <= world.map.tilesY ? 1 : 0;
+        int bottomY = (source.position.getY() + _agentMapRadius + 1) <= _world.getMapModel().getTilesY() ? 1 : 0;
         for (int i = leftX; i <= rightX; i++ )
         {
             for (int j = topY; j <= bottomY; j++)
@@ -98,7 +97,7 @@ public class AStarPathFinding {
                     if (!IsAgentCollideAtPosition(neighborPos)) {
                         PathNode neighborNode = new PathNode(source.price + price
                                 + GetHeuristicLength(neighborPos, _mapDestination) * 2, neighborPos);
-                        //if (!visitedNodes.containsKey(neighborNode))
+                        if (!_visitedNodes.containsKey(neighborNode))
                             neighborNodes.add(neighborNode);
                     }
                 }
@@ -116,15 +115,15 @@ public class AStarPathFinding {
     {
         for (int i = (int) (positionToCheck.getX() - Math.ceil(_agentMapRadius)); i < (int) (positionToCheck.getX() + Math.ceil(_agentMapRadius)); i++)
         {
-            if (i < 0 || i > world.map.tilesX)
+            if (i < 0 || i > _world.getMapModel().getTilesX())
                 return true;
             for (int j = (int)(positionToCheck.getY() - Math.ceil(_agentMapRadius)); j < (int) (positionToCheck.getY() + Math.ceil(_agentMapRadius)); j++)
             {
-                if (j < 0 || j > world.map.tilesY)
+                if (j < 0 || j > _world.getMapModel().getTilesY())
                     return true;
                 if (Vector2D.distance(positionToCheck, new Vector2D(i, j)) <= Math.ceil(_agentMapRadius))
                 {
-                    if (world.map.tiles[i][j].getPassPrice() < 0)
+                    if (_world.getMap().getTile(i,j).getPassPrice() < 0)
                         return true;
                 }
             }

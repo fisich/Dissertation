@@ -51,22 +51,22 @@ public class Main extends Application implements IMouseEventReceiver {
         for (int i = 10; i < 16; i++)
             for (int j = 10; j < 16; j++)
             {
-                world.map.UpdateTile(i,j, Color.BLACK, -1);
+                world.getMap().UpdateTile(i,j, Color.BLACK, -1);
             }
         for (int i = 23; i < 29; i++)
             for (int j = 10; j < 16; j++)
             {
-                world.map.UpdateTile(i,j, Color.BLACK, -1);
+                world.getMap().UpdateTile(i,j, Color.BLACK, -1);
             }
         for (int i = 10; i < 16; i++)
             for (int j = 23; j < 29; j++)
             {
-                world.map.UpdateTile(i,j, Color.BLACK, -1);
+                world.getMap().UpdateTile(i,j, Color.BLACK, -1);
             }
         for (int i = 23; i < 29; i++)
             for (int j = 23; j < 29; j++)
             {
-                world.map.UpdateTile(i,j, Color.BLACK, -1);
+                world.getMap().UpdateTile(i,j, Color.BLACK, -1);
             }
         List<Agent> yellowTeam = new ArrayList<>();
         for (int i = 30; i <= 180; i+=50)
@@ -104,14 +104,15 @@ public class Main extends Application implements IMouseEventReceiver {
                 greenTeam.add(agent);
             }
         }
-        world.agents = Stream.of(yellowTeam.stream(),
-                redTeam.stream(),
-                blueTeam.stream(),
-                greenTeam.stream())
-                .flatMap(i -> i)
-                .collect(Collectors.toList());
-        for (Agent a: world.agents) {
-            a.MoveTo(Math.abs(world.map.sizeX - a.getPosition().getX()), Math.abs(world.map.sizeY - a.getPosition().getY()));
+        world.agents().addAll(
+                Stream.of(yellowTeam.stream(),
+                    redTeam.stream(),
+                    blueTeam.stream(),
+                    greenTeam.stream())
+                .flatMap(i -> i).collect(Collectors.toList())
+        );
+        for (Agent a: world.agents()) {
+            a.MoveTo(Math.abs(world.getMapModel().sizeX() - a.getPosition().getX()), Math.abs(world.getMapModel().sizeY() - a.getPosition().getY()));
         }
     }
 
@@ -137,21 +138,21 @@ public class Main extends Application implements IMouseEventReceiver {
             }
 
             double angle = Math.toRadians(360.0 / numObjects * i); // угол в радианах
-            int x = (int) (world.map.sizeX * 0.5 + (world.map.sizeX * 0.47d) * Math.cos(angle)); // координата X объекта
-            int y = (int) (world.map.sizeY * 0.5 + (world.map.sizeX * 0.47d) * Math.sin(angle)); // координата Y объекта
+            int x = (int) (world.getMapModel().sizeX() * 0.5 + (world.getMapModel().sizeX() * 0.47d) * Math.cos(angle)); // координата X объекта
+            int y = (int) (world.getMapModel().sizeY() * 0.5 + (world.getMapModel().sizeY() * 0.47d) * Math.sin(angle)); // координата Y объекта
             // создание и расстановка объекта с координатами (x, y)
-            world.agents.add(new Agent(x, y, 10, new Color(r, g,b,1), world, false));
+            world.agents().add(new Agent(x, y, 10, new Color(r, g,b,1), world, false));
         }
-        for (Agent a: world.agents) {
-            a.MoveTo(Math.abs(world.map.sizeX - a.getPosition().getX()), Math.abs(world.map.sizeY - a.getPosition().getY()));
+        for (Agent a: world.agents()) {
+            a.MoveTo(Math.abs(world.getMapModel().sizeX() - a.getPosition().getX()), Math.abs(world.getMapModel().sizeY() - a.getPosition().getY()));
         }
     }
 
     public void Scenario3()
     {
-        world.agents.add(new Agent(200,200,20,Color.RED, world, false));
-        world.agents.add(new Agent(200,400,20,Color.RED, world, false));
-        world.agents.get(0).MoveTo(200,400);
-        world.agents.get(1).MoveTo(200,200);
+        world.agents().add(new Agent(200,200,20,Color.RED, world, false));
+        world.agents().add(new Agent(200,400,20,Color.RED, world, false));
+        world.agents().get(0).MoveTo(200,400);
+        world.agents().get(1).MoveTo(200,200);
     }
 }
