@@ -4,30 +4,28 @@ import javafx.scene.paint.Color;
 
 public class NavigationMapTileInfo {
     private Color color;
-    private float passPrice;
+    private double passPrice;
 
-    public NavigationMapTileInfo()
-    {
-        color = Color.LIGHTGRAY;
+    public NavigationMapTileInfo() {
+        color = Color.WHITE;
         passPrice = 0;
     }
 
-    public NavigationMapTileInfo(Color color, float passPrice) {
+    public NavigationMapTileInfo(Color color, double passPrice) {
         this.color = color;
         this.passPrice = passPrice;
     }
 
-    public void UpdateInfo(Color color, float passPrice) {
+    public void UpdateInfo(Color color, double passPrice) {
         this.color = color;
         this.passPrice = passPrice;
     }
 
-    public Color getColor()
-    {
+    public Color getColor() {
         return color;
     }
 
-    public float getPassPrice() {
+    public double getPassPrice() {
         return passPrice;
     }
 }

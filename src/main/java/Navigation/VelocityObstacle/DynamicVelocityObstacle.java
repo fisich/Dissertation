@@ -1,114 +1,104 @@
 package Navigation.VelocityObstacle;
 
-import MathExtensions.Vector2DExtension;
 import Navigation.Agent;
 import org.apache.commons.math3.geometry.euclidean.twod.Vector2D;
 import org.apache.commons.math3.util.FastMath;
 
-import java.util.*;
-
 import static MathExtensions.Vector2DExtension.*;
 
-public class DynamicVelocityObstacle extends BaseObstacle{
+public class DynamicVelocityObstacle extends BaseObstacle {
 
-    private final double _minkowskiRadius;
+    private final Vector2D relativeLeftSide, relativeRightSide;
 
-    public DynamicVelocityObstacle(Agent A, Agent B) {
-        _minkowskiRadius = (B.radius + A.radius);
-        double minkowskiRadiusSq = _minkowskiRadius * _minkowskiRadius;
-        double distanceBetweenAgentsSq = Vector2D.distanceSq(B.getPosition(), A.getPosition());
-        double distanceBetweenAgents = FastMath.sqrt(distanceBetweenAgentsSq);
+    public DynamicVelocityObstacle(Agent origin, Agent obstacleAgent, VelocityObstacleAlgorithm algorithm) {
+        minkowskiRadius = (origin.radius + obstacleAgent.radius);
+        double minkowskiRadiusSq = minkowskiRadius * minkowskiRadius;
+        double distanceBetweenAgentsSq = Vector2D.distanceSq(origin.getPosition(), obstacleAgent.getPosition());
         if (distanceBetweenAgentsSq < minkowskiRadiusSq) {
-            throw new RuntimeException("Tricky collision: inside dynamic");
+            throw new RuntimeException("Error, inside dynamic obstacleAgent");
         }
-        // Рассматриваем прямоугольный треугольник, чтобы найти касательную и угол ее наклона слева и справа для
-        // формирования области VO.
-        double tangentLength = 0;
-        if (distanceBetweenAgents > _minkowskiRadius) {
-            tangentLength = FastMath.sqrt(Math.abs(distanceBetweenAgentsSq - minkowskiRadiusSq));
-        }
-        double sin = _minkowskiRadius / distanceBetweenAgents;
+        double distanceBetweenAgents = FastMath.sqrt(distanceBetweenAgentsSq);
+        // Строим область VO
+        // Длина касательной к окружности
+        double tangentLength = FastMath.sqrt(distanceBetweenAgentsSq - minkowskiRadiusSq);
+        double sin = minkowskiRadius / distanceBetweenAgents;
         double cos = tangentLength / distanceBetweenAgents;
-        double triangleHeight = distanceBetweenAgents + _minkowskiRadius;
-        // Находим сторону равнобедренного треугольника, в который вписана окружность (сумма Минковского)
-        // Длину получаем через cos
-        Vector2D _relativeBPosition = B.getPosition().subtract(A.getPosition());
+        // Высота треугольника
+        double triangleHeight = distanceBetweenAgents + minkowskiRadius;
+        // Вектор стороны равнобедренного треугольника вдоль касательной
+        // Через cos получаем длину стороны так, чтобы область суммы Минковского была вписана в треугольник VO
+        Vector2D _relativeBPosition = obstacleAgent.getPosition().subtract(origin.getPosition());
         Vector2D tangentVec = _relativeBPosition.normalize().scalarMultiply(triangleHeight / cos);
-        _rightSide = RotateVector(tangentVec, -sin, cos);
-        _leftSide = RotateVector(tangentVec, sin, cos);
+        // Через поворот получаем вектор левой и правой сторон
+        // Каждая из них расположена относительно агента origin
+        Vector2D rightSide = rotateVector(tangentVec, -sin, cos);
+        Vector2D leftSide = rotateVector(tangentVec, sin, cos);
+        // Согласно алгоритмам вычисляем опорную точку области препятствий
         // VO
-        //Vector2D VOrelativeObstaclePos = B.getVelocity();
-        // RVO
-        Vector2D RVOrelativeObstaclePos = B.getVelocity().add(A.getVelocity()).scalarMultiply(0.5d);
-        // HRVO
-        /*if (CalculateDistanceToLine(A.getVelocity(), B.getVelocity(), B.getVelocity().add(leftSide()))
-        < CalculateDistanceToLine(A.getVelocity(), B.getVelocity(), B.getVelocity().add(rightSide())))
-        {
-            // Левая сторона ближе, делаем ее менее привлекательной
-            _relativeObstaclePos = GetLinesCross(VOrelativeObstaclePos, VOrelativeObstaclePos.add(leftSide()),
-                    RVOrelativeObstaclePos, RVOrelativeObstaclePos.add(rightSide()));
+        switch (algorithm) {
+            case VELOCITY_OBSTACLE:
+                relativeObstaclePos = obstacleAgent.getVelocity();
+                break;
+            case RECIPROCAL_VELOCITY_OBSTACLE:
+                relativeObstaclePos = obstacleAgent.getVelocity().add(origin.getVelocity()).scalarMultiply(0.5d);
+                break;
+            case HYBRID_RECIPROCAL_VELOCITY_OBSTACLE:
+                Vector2D VOrelativeObstaclePos = obstacleAgent.getVelocity();
+                Vector2D RVOrelativeObstaclePos = obstacleAgent.getVelocity().add(origin.getVelocity()).scalarMultiply(0.5d);
+                if (getDistanceToLine(origin.getVelocity(), RVOrelativeObstaclePos, RVOrelativeObstaclePos.add(leftSide))
+                        < getDistanceToLine(origin.getVelocity(), RVOrelativeObstaclePos, RVOrelativeObstaclePos.add(rightSide))) {
+                    // Левая сторона ближе, делаем правую менее привлекательной
+                    relativeObstaclePos = getLinesCrossPoint(VOrelativeObstaclePos, VOrelativeObstaclePos.add(rightSide),
+                            RVOrelativeObstaclePos, RVOrelativeObstaclePos.add(leftSide));
+                } else {
+                    // Правая сторона дальше, делаем левую менее привлекательной
+                    relativeObstaclePos = getLinesCrossPoint(VOrelativeObstaclePos, VOrelativeObstaclePos.add(leftSide),
+                            RVOrelativeObstaclePos, RVOrelativeObstaclePos.add(rightSide));
+                }
+                break;
         }
-        else
-        {
-            // Правая сторона ближе, делаем ее менее привлекательной
-            _relativeObstaclePos = GetLinesCross(VOrelativeObstaclePos, VOrelativeObstaclePos.add(rightSide()),
-                    RVOrelativeObstaclePos, RVOrelativeObstaclePos.add(leftSide()));
-        }*/
-        _relativeObstaclePos = RVOrelativeObstaclePos;
+        relativeLeftSide = relativeObstaclePos.add(leftSide);
+        relativeRightSide = relativeObstaclePos.add(rightSide);
     }
 
-    public Vector2D GetCrossPointWithClosestSide(Vector2D currentVelocity)
-    {
-        if (CalculateDistanceToLine(currentVelocity, _relativeObstaclePos, _relativeObstaclePos.add(leftSide()))
-                < CalculateDistanceToLine(currentVelocity, _relativeObstaclePos, _relativeObstaclePos.add(rightSide())))
-        {
-            return GetLinesCross(Vector2D.ZERO, currentVelocity,
-                    _relativeObstaclePos, _relativeObstaclePos.add(leftSide()));
-        }
-        else
-        {
-            return GetLinesCross(Vector2D.ZERO, currentVelocity,
-                    _relativeObstaclePos, _relativeObstaclePos.add(rightSide()));
+    public Vector2D getCrossPointWithClosestSide(Vector2D currentVelocity) {
+        if (getDistanceToLine(currentVelocity, relativeObstaclePos, relativeLeftSide)
+                < getDistanceToLine(currentVelocity, relativeObstaclePos, relativeRightSide)) {
+            return getLinesCrossPoint(Vector2D.ZERO, currentVelocity, relativeObstaclePos, relativeLeftSide);
+        } else {
+            return getLinesCrossPoint(Vector2D.ZERO, currentVelocity, relativeObstaclePos, relativeRightSide);
         }
     }
 
     @Override
-    public boolean IsCollideWithVelocityObstacle(Vector2D point) {
-        // Честный подсчет, преобразовывать точку point не надо
-        return IsPointInsideTriangle(point, _relativeObstaclePos,
-                _leftSide.add(_relativeObstaclePos),
-                _rightSide.add(_relativeObstaclePos));
+    public boolean isVelocityCollide(Vector2D velocity) {
+        return isPointInsideTriangle(velocity, relativeObstaclePos,
+                relativeLeftSide, relativeRightSide);
     }
 
-    private static boolean IsPointInsideTriangle(Vector2D point, Vector2D A, Vector2D B, Vector2D C)
-    {
-        // https://www.cyberforum.ru/algorithms/thread144722.html
-        double first = sign(point, A, B);
-        double second = sign(point, C, A);
-        //double third = sign(point, C, A);
-        boolean has_neg = (first < 0) || (second < 0);// || (third < 0);
-        boolean has_pos = (first > 0) || (second > 0); //|| (third > 0);
+    private static boolean isPointInsideTriangle(Vector2D point, Vector2D A, Vector2D B, Vector2D C) {
+        double first = pseudoScalarProduct(point, A, B);
+        double second = pseudoScalarProduct(point, C, A);
+        boolean has_neg = (first < 0) || (second < 0);
+        boolean has_pos = (first > 0) || (second > 0);
 
         return !(has_neg && has_pos);
     }
 
-    private boolean IsPointOutsideTriangle(Vector2D point)
-    {
-        double angleBetweenLeftRight = GetAngleBetweenVectors(_leftSide, _rightSide);
-        double angleBetweenLeftPoint = GetAngleBetweenVectors(_leftSide, point.subtract(_relativeObstaclePos));
-        if (angleBetweenLeftPoint < 0)
-            return true;
-        return angleBetweenLeftPoint > angleBetweenLeftRight;
-    }
-
-    private static double sign(Vector2D p1, Vector2D p2, Vector2D p3)
-    {
+    private static double pseudoScalarProduct(Vector2D p1, Vector2D p2, Vector2D p3) {
         return (p1.getX() - p3.getX()) * (p2.getY() - p3.getY()) - (p2.getX() - p3.getX()) * (p1.getY() - p3.getY());
     }
 
     @Override
-    public VelocityObstacleType getType()
-    {
+    public VelocityObstacleType getType() {
         return VelocityObstacleType.DYNAMIC;
+    }
+
+    public Vector2D getRelativeLeftSide() {
+        return relativeLeftSide;
+    }
+
+    public Vector2D getRelativeRightSide() {
+        return relativeRightSide;
     }
 }

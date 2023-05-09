@@ -1,53 +1,59 @@
 package Application.Controllers;
 
-import Navigation.World;
-import Patterns.Observer.IMouseEventReceiver;
-import Patterns.Observer.MouseEventSender;
-import Application.Rendering.WorldRenderer;
+import Application.Core.Scenario;
+import Application.Rendering.EnvironmentRenderer;
+import Navigation.VelocityObstacle.VelocityObstacleAlgorithm;
+import Navigation.VirtualEnvironment;
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
+import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import org.apache.commons.math3.geometry.euclidean.twod.Vector2D;
 
 import java.io.IOException;
 
-public class MainWindowController extends MouseEventSender {
+public class MainWindowController{
 
-    private final Stage rootStage;
-    private World _world;
-    private WorldRenderer _renderer;
+    private final Stage mRootStage;
+    private final VirtualEnvironment mVirtualEnvironment;
+    private EnvironmentRenderer mEnvironmentRenderer;
+    private boolean pause = true;
+
     @FXML
-    public Canvas mapCanvas;
+    private Canvas mapCanvas;
+    @FXML
+    private Button setAgentsBtn, runScenarioBtn;
+    @FXML
+    private ChoiceBox<String> scenariosChoiceBox, algorithmsChoiceBox;
+    @FXML
+    private CheckBox drawVelocitiesChkbox, drawStaticObstaclesChkbox, drawDynamicObstaclesChkbox;
 
-    public MainWindowController(World world) throws IOException {
-        rootStage = new Stage();
+    public MainWindowController(VirtualEnvironment virtualEnvironment) throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/mainScene.fxml"));
         loader.setController(this);
-        Parent root = loader.load();
-        rootStage.setScene(new Scene(root));
-        _world = world;
-        mapCanvas.setWidth(_world.map.tilesX * _world.map.mapTileSize);
-        mapCanvas.setHeight(_world.map.tilesY * _world.map.mapTileSize);
+        mRootStage = loader.load();
+        mVirtualEnvironment = virtualEnvironment;
+        mapCanvas.setWidth(mVirtualEnvironment.getMapModel().getTilesX() * mVirtualEnvironment.getMapModel().getTileSize());
+        mapCanvas.setHeight(mVirtualEnvironment.getMapModel().getTilesY() * mVirtualEnvironment.getMapModel().getTileSize());
     }
 
-    public void start()
-    {
-        rootStage.show();
-        _renderer = new WorldRenderer(_world, mapCanvas);
-        AddObserver(_renderer);
+    public void start() {
+        mRootStage.show();
+        mEnvironmentRenderer = new EnvironmentRenderer(mVirtualEnvironment, mapCanvas);
 
-        new AnimationTimer()
-        {
-            public void handle(long currentNanoTime)
-            {
-                _renderer.Redraw();
-                _world.SendTicks();
+        new AnimationTimer() {
+            public void handle(long currentNanoTime) {
+                mEnvironmentRenderer.render();
+                if (!pause)
+                    mVirtualEnvironment.tickAgents();
             }
         }.start();
     }
@@ -58,19 +64,41 @@ public class MainWindowController extends MouseEventSender {
     }
 
     @FXML
-    private void initialize()
-    {
-        mapCanvas.setOnMouseClicked(event -> mouseDrawOnCanvas(event));
+    private void initialize() {
+        mapCanvas.setOnMouseClicked(this::mouseDrawOnCanvas);
+        setAgentsBtn.setOnMouseClicked(event -> {
+            pause = true;
+            VelocityObstacleAlgorithm algorithm;
+            switch (algorithmsChoiceBox.getSelectionModel().getSelectedItem()) {
+                case "VO":
+                    algorithm = VelocityObstacleAlgorithm.VELOCITY_OBSTACLE;
+                    break;
+                case "RVO":
+                    algorithm = VelocityObstacleAlgorithm.RECIPROCAL_VELOCITY_OBSTACLE;
+                    break;
+                case "HRVO":
+                    algorithm = VelocityObstacleAlgorithm.HYBRID_RECIPROCAL_VELOCITY_OBSTACLE;
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected value: " + algorithmsChoiceBox.getSelectionModel().getSelectedItem());
+            }
+            mVirtualEnvironment.setAlgorithm(algorithm);
+            String currentValue = scenariosChoiceBox.getSelectionModel().getSelectedItem();
+            if (currentValue.equals("Scenario 1"))
+                Scenario.scenario1(mVirtualEnvironment);
+            else if (currentValue.equals("Scenario 2"))
+                Scenario.scenario2(mVirtualEnvironment);
+            else
+                Scenario.scenario3(mVirtualEnvironment);
+        });
+        runScenarioBtn.setOnMouseClicked(event -> pause = !pause);
+        drawVelocitiesChkbox.setOnMouseClicked(event -> mEnvironmentRenderer.drawVelocities = drawVelocitiesChkbox.isSelected());
+        drawStaticObstaclesChkbox.setOnMouseClicked(event -> mEnvironmentRenderer.drawStaticObstacles = drawStaticObstaclesChkbox.isSelected());
+        drawDynamicObstaclesChkbox.setOnMouseClicked(event -> mEnvironmentRenderer.drawDynamicObstacles = drawDynamicObstaclesChkbox.isSelected());
     }
 
     public void mouseDrawOnCanvas(MouseEvent mouseEvent) {
-        NotifyObservers(mouseEvent.getX(), mouseEvent.getY());
-    }
-
-    @Override
-    public void NotifyObservers(double x, double y) {
-        for (IMouseEventReceiver observer: observers) {
-            observer.Update(x, y);
-        }
+        Vector2D mapTile = mVirtualEnvironment.fromScreenToMapCoordinate2D(mouseEvent.getX(), mouseEvent.getY());
+        mVirtualEnvironment.getMap().updateTileInfo((int) mapTile.getX(), (int) mapTile.getY(), Color.BLACK, -1);
     }
 }
