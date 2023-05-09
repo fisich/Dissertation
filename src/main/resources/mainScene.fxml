@@ -1,19 +1,72 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.lang.*?>
+<?import javafx.collections.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.*?>
 <?import javafx.scene.canvas.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.stage.*?>
 
-<HBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/8.0.281" xmlns:fx="http://javafx.com/fxml/1">
-   <children>
-      <AnchorPane maxHeight="Infinity" maxWidth="Infinity" minHeight="-Infinity" minWidth="-Infinity" HBox.hgrow="ALWAYS">
-         <children>
-            <Canvas fx:id="mapCanvas" height="580.0" width="580.0" AnchorPane.bottomAnchor="10.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0" />
-         </children>
-      </AnchorPane>
-      <VBox minWidth="200">
-         <children>
-            <Label text="Some text here" />
-         </children></VBox>
-   </children>
-</HBox>
+<Stage minHeight="870" minWidth="1050" title="Dissertation: Velocity obstacle avoidance by Fisenko A.D." xmlns="http://javafx.com/javafx/8.0.281" xmlns:fx="http://javafx.com/fxml/1">
+    <scene>
+        <Scene>
+            <HBox maxHeight="Infinity" maxWidth="Infinity" minHeight="600.0" minWidth="600.0" prefHeight="600.0"
+                  prefWidth="800.0" xmlns="http://javafx.com/javafx/8.0.281" xmlns:fx="http://javafx.com/fxml/1">
+                <AnchorPane maxHeight="Infinity" maxWidth="Infinity" minHeight="-Infinity" minWidth="-Infinity"
+                            HBox.hgrow="ALWAYS">
+                    <Canvas fx:id="mapCanvas" height="580.0" width="580.0" AnchorPane.bottomAnchor="10.0"
+                            AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0"/>
+                </AnchorPane>
+                <AnchorPane prefHeight="200.0" prefWidth="200.0">
+                    <HBox.margin>
+                        <Insets right="5.0"/>
+                    </HBox.margin>
+                    <padding>
+                        <Insets right="5.0"/>
+                    </padding>
+                    <VBox minWidth="200">
+                        <Label text="Scenario"/>
+                        <ChoiceBox fx:id="scenariosChoiceBox" prefWidth="200.0" value="Scenario 1">
+                            <items>
+                                <FXCollections fx:factory="observableArrayList">
+                                    <String fx:value="Scenario 1"/>
+                                    <String fx:value="Scenario 2"/>
+                                    <String fx:value="Scenario 3"/>
+                                </FXCollections>
+                            </items>
+                        </ChoiceBox>
+                        <Label text="Algorithm"/>
+                        <ChoiceBox fx:id="algorithmsChoiceBox" prefWidth="200.0" value="VO">
+                            <items>
+                                <FXCollections fx:factory="observableArrayList">
+                                    <String fx:value="VO"/>
+                                    <String fx:value="RVO"/>
+                                    <String fx:value="HRVO"/>
+                                </FXCollections>
+                            </items>
+                        </ChoiceBox>
+                        <Label text="Options"/>
+                        <CheckBox fx:id="drawVelocitiesChkbox" mnemonicParsing="false" text="Draw velocities"/>
+                        <CheckBox fx:id="drawStaticObstaclesChkbox" mnemonicParsing="false"
+                                  text="Draw static obstacles"/>
+                        <CheckBox fx:id="drawDynamicObstaclesChkbox" mnemonicParsing="false"
+                                  text="Draw dynamic obstacles"/>
+                        <Button fx:id="setAgentsBtn" minWidth="200" mnemonicParsing="false" text="Set agents">
+                            <VBox.margin>
+                                <Insets top="10.0"/>
+                            </VBox.margin>
+                        </Button>
+                        <Button fx:id="runScenarioBtn" minWidth="200" mnemonicParsing="false"
+                                text="Run/pause agents">
+                            <VBox.margin>
+                                <Insets top="10.0"/>
+                            </VBox.margin>
+                        </Button>
+                    </VBox>
+                </AnchorPane>
+            </HBox>
+        </Scene>
+    </scene>
+</Stage>

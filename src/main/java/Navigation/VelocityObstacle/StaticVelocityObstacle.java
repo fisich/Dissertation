@@ -2,35 +2,33 @@ package Navigation.VelocityObstacle;
 
 import Navigation.Agent;
 import org.apache.commons.math3.geometry.euclidean.twod.Vector2D;
-import static MathExtensions.Vector2DExtension.*;
 
-public class StaticVelocityObstacle extends BaseObstacle{
+import static MathExtensions.Vector2DExtension.isVector2DCrossCircle;
 
-    public StaticVelocityObstacle(Agent A, Agent B) {
-        setupFields(B.getPosition().subtract(A.getPosition()), A.radius + B.radius);
+public class StaticVelocityObstacle extends BaseObstacle {
+
+    public StaticVelocityObstacle(Agent origin, Agent obstacleAgent) {
+        setup(obstacleAgent.getPosition().subtract(origin.getPosition()), origin.radius + obstacleAgent.radius);
     }
 
-    public StaticVelocityObstacle(Vector2D relativePosition, double radius)
-    {
-        setupFields(relativePosition, radius);
+    public StaticVelocityObstacle(Vector2D relativePosition, double radius) {
+        setup(relativePosition, radius);
     }
 
-    private void setupFields(Vector2D relativePosition, double radius)
-    {
+    private void setup(Vector2D relativePosition, double radius) {
         minkowskiRadius = radius;
-        _relativeObstaclePos = relativePosition;
-        if (_relativeObstaclePos.getNorm() <=  minkowskiRadius)
+        relativeObstaclePos = relativePosition;
+        if (relativeObstaclePos.getNorm() <= minkowskiRadius)
             throw new RuntimeException("Error, agent inside static velocity");
     }
 
     @Override
-    public boolean IsVelocityCollideWithObstacle(Vector2D velocity) {
-        return IsVecCrossCircle(Vector2D.ZERO, velocity, _relativeObstaclePos, minkowskiRadius);
+    public boolean isVelocityCollide(Vector2D velocity) {
+        return isVector2DCrossCircle(Vector2D.ZERO, velocity, relativeObstaclePos, minkowskiRadius);
     }
 
     @Override
-    public VelocityObstacleType getType()
-    {
+    public VelocityObstacleType getType() {
         return VelocityObstacleType.STATIC;
     }
 }

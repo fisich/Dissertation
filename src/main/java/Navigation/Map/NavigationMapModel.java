@@ -1,25 +1,35 @@
 package Navigation.Map;
 
 public class NavigationMapModel {
-    private final int _mapTileSize;
-    private final int _tilesX, _tilesY;
-    private final double _sizeX, _sizeY;
+    private final int mapTileSize;
+    private final int tilesX, tilesY;
+    private final double sizeX, sizeY;
 
     public NavigationMapModel(int mapTileSize, int tilesX, int tilesY) {
-        this._mapTileSize = mapTileSize;
-        this._tilesX = tilesX;
-        this._tilesY = tilesY;
-        this._sizeX = tilesX * mapTileSize;
-        this._sizeY = tilesY * mapTileSize;
+        this.mapTileSize = mapTileSize;
+        this.tilesX = tilesX;
+        this.tilesY = tilesY;
+        this.sizeX = tilesX * mapTileSize;
+        this.sizeY = tilesY * mapTileSize;
     }
 
-    public int getTileSize() { return _mapTileSize; }
+    public int getTileSize() {
+        return mapTileSize;
+    }
 
-    public int getTilesX() { return _tilesX; }
+    public int getTilesX() {
+        return tilesX;
+    }
 
-    public int getTilesY() { return _tilesY; }
+    public int getTilesY() {
+        return tilesY;
+    }
 
-    public double sizeX() { return _sizeX; }
+    public double sizeX() {
+        return sizeX;
+    }
 
-    public double sizeY() { return _sizeY; }
+    public double sizeY() {
+        return sizeY;
+    }
 }
