@@ -18,23 +18,19 @@ public class DynamicVelocityObstacle extends BaseObstacle {
             throw new RuntimeException("Error, inside dynamic obstacleAgent");
         }
         double distanceBetweenAgents = FastMath.sqrt(distanceBetweenAgentsSq);
-        // Строим область VO
-        // Длина касательной к окружности
+        // Calculate VO
+        // Calculate length of tangent line to circle of minkowski sum
         double tangentLength = FastMath.sqrt(distanceBetweenAgentsSq - minkowskiRadiusSq);
         double sin = minkowskiRadius / distanceBetweenAgents;
         double cos = tangentLength / distanceBetweenAgents;
-        // Высота треугольника
         double triangleHeight = distanceBetweenAgents + minkowskiRadius;
-        // Вектор стороны равнобедренного треугольника вдоль касательной
-        // Через cos получаем длину стороны так, чтобы область суммы Минковского была вписана в треугольник VO
+        // Get vector for triangle side towards tangent line
         Vector2D _relativeBPosition = obstacleAgent.getPosition().subtract(origin.getPosition());
+        // Use cos to get length so that the area of the Minkowski sum is inscribed in the triangle VO
         Vector2D tangentVec = _relativeBPosition.normalize().scalarMultiply(triangleHeight / cos);
-        // Через поворот получаем вектор левой и правой сторон
-        // Каждая из них расположена относительно агента origin
+        // Rotate vector so we get sides of triangle
         Vector2D rightSide = rotateVector(tangentVec, -sin, cos);
         Vector2D leftSide = rotateVector(tangentVec, sin, cos);
-        // Согласно алгоритмам вычисляем опорную точку области препятствий
-        // VO
         switch (algorithm) {
             case VELOCITY_OBSTACLE:
                 relativeObstaclePos = obstacleAgent.getVelocity();
@@ -47,11 +43,11 @@ public class DynamicVelocityObstacle extends BaseObstacle {
                 Vector2D RVOrelativeObstaclePos = obstacleAgent.getVelocity().add(origin.getVelocity()).scalarMultiply(0.5d);
                 if (getDistanceToLine(origin.getVelocity(), RVOrelativeObstaclePos, RVOrelativeObstaclePos.add(leftSide))
                         < getDistanceToLine(origin.getVelocity(), RVOrelativeObstaclePos, RVOrelativeObstaclePos.add(rightSide))) {
-                    // Левая сторона ближе, делаем правую менее привлекательной
+                    // Left line closer, so make the right one less attractive
                     relativeObstaclePos = getLinesCrossPoint(VOrelativeObstaclePos, VOrelativeObstaclePos.add(rightSide),
                             RVOrelativeObstaclePos, RVOrelativeObstaclePos.add(leftSide));
                 } else {
-                    // Правая сторона дальше, делаем левую менее привлекательной
+                    // Right line closer, so make the left one less attractive
                     relativeObstaclePos = getLinesCrossPoint(VOrelativeObstaclePos, VOrelativeObstaclePos.add(leftSide),
                             RVOrelativeObstaclePos, RVOrelativeObstaclePos.add(rightSide));
                 }

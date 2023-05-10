@@ -76,20 +76,21 @@ public class Agent {
             return;
         }
         Vector2D nextPoint = route.peek();
-        // если в процессе избегания столкновений агент приблизился к следующей точке минуя прошлую
+        // check if agent can reach some of the next points during obstacle avoidance
         if (route.size() > 1) {
             List<Vector2D> tempRoute = new ArrayList<>(route);
             List<Vector2D> finalTempRoute = tempRoute;
             int availableRouteNodeIndex = IntStream.range(1, route.size()).filter(i -> virtualEnvironment.getMap()
                     .isPathBetweenPointsClear(virtualEnvironment.toMapCoordinate2D(getPosition()),
                             virtualEnvironment.toMapCoordinate2D(finalTempRoute.get(i)))).reduce((a, b) -> b).orElse(-1);
+            // if found reachable point, then move to it and skip other part of route
             if (availableRouteNodeIndex > 0) {
                 nextPoint = tempRoute.get(availableRouteNodeIndex);
                 tempRoute = tempRoute.subList(availableRouteNodeIndex, tempRoute.size());
                 route = new LinkedList<>(tempRoute);
             }
         }
-        // если в процессе избегания столкновений потерян прямой путь к следующей точке маршрута
+        // if agent has lost line of sight of the point, then recalculate the route
         if (!virtualEnvironment.getMap().isPathBetweenPointsClear(virtualEnvironment.toMapCoordinate2D(getPosition()), virtualEnvironment.toMapCoordinate2D(nextPoint))) {
             getRoute(targetPoint);
             nextPoint = route.peek();
@@ -119,9 +120,7 @@ public class Agent {
         if (VO.isVelocityAvailableForAgent(goalVelocity)) {
             currentVelocity = goalVelocity;
         } else {
-            if (!VO.isVelocityAvailableForAgent(currentVelocity)) {
-                currentVelocity = VO.findBestVelocityOutsideObstacles(goalVelocity);
-            }
+            currentVelocity = VO.findBestVelocityOutsideObstacles(this);
         }
         Vector2D posMove = currentVelocity.scalarMultiply(1d / FPS);
         position = position.add(posMove);

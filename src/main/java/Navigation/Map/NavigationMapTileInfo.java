@@ -7,7 +7,7 @@ public class NavigationMapTileInfo {
     private double passPrice;
 
     public NavigationMapTileInfo() {
-        color = Color.WHITE;
+        color = Color.LIGHTGRAY;
         passPrice = 0;
     }
 

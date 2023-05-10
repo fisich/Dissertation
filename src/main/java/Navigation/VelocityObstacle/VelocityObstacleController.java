@@ -5,6 +5,7 @@ import Navigation.Agent;
 import Navigation.Map.NavigationMapModel;
 import Navigation.VirtualEnvironment;
 import org.apache.commons.math3.geometry.euclidean.twod.Vector2D;
+import org.apache.commons.math3.util.FastMath;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -117,10 +118,10 @@ public class VelocityObstacleController {
         return min;
     }
 
-    public Vector2D findBestVelocityOutsideObstacles(Vector2D currentVelocity) {
+    public Vector2D findBestVelocityOutsideObstacles(Agent agent) {
         List<Vector2D> velocities = new ArrayList<>();
         for (int i = 1; i < 24; i++) {
-            Vector2D vel = Vector2DExtension.rotateVector(currentVelocity, 0.261799 * i);
+            Vector2D vel = Vector2DExtension.rotateVector(new Vector2D(0, agent.maxVelocity), 0.261799 * i);
             velocities.add(vel);
             velocities.add(vel.scalarMultiply(0.5d));
             velocities.add(vel.scalarMultiply(0.25d));
@@ -139,24 +140,21 @@ public class VelocityObstacleController {
 
         List<Map.Entry<Vector2D, Double>> velocityAndPenaltyScore = new ArrayList<>();
         for (Vector2D vel : velocities) {
-            double distScore = Vector2D.distance(currentVelocity, vel);
+            double distScore = Vector2D.distance(agent.getGoalVelocity(), vel)
+                    + Vector2D.distance(agent.getVelocity(), vel);
             if (minCollision == 0) {
                 distScore -= vel.getNorm();
                 velocityAndPenaltyScore.add(new AbstractMap.SimpleEntry<>(vel, distScore));
             } else {
-                boolean added = false;
+                double timeToCollideScore = 0;
                 for (DynamicVelocityObstacle obstacle : dynamicObstacles) {
-                    double timeToCollideScore = 0;
                     if (obstacle.isVelocityCollide(vel)) {
                         Vector2D collisionPoint = obstacle.getCrossPointWithClosestSide(vel);
-                        timeToCollideScore = vel.getNorm() * 15 / collisionPoint.getNorm();
+                        double timeToCollideScoreTemp = vel.getNorm() * agent.maxVelocity * 0.5d / collisionPoint.getNorm();
+                        timeToCollideScore = FastMath.max(timeToCollideScore, timeToCollideScoreTemp);
                     }
-                    velocityAndPenaltyScore.add(new AbstractMap.SimpleEntry<>(vel,
-                            timeToCollideScore + distScore));
-                    added = true;
                 }
-                if (!added)
-                    velocityAndPenaltyScore.add(new AbstractMap.SimpleEntry<>(vel, distScore));
+                velocityAndPenaltyScore.add(new AbstractMap.SimpleEntry<>(vel, distScore + timeToCollideScore));
             }
         }
         Optional<Vector2D> bestVelocity = velocityAndPenaltyScore.stream()
