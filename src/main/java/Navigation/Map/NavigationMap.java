@@ -32,8 +32,10 @@ public class NavigationMap {
                 _start = end;
                 _end = start;
             }
-            for (int x = (int) _start.getX(); x < _end.getX(); x++) {
-                if (mapTilesInfo[x][(int) Math.ceil(x * equation.M + equation.B)].getPassPrice() < 0)
+            for (int x = (int) _start.getX(); x < (int) _end.getX(); x++) {
+                int y = (int) Math.ceil(x * equation.M + equation.B);
+                y = y < mapModel.getTilesY() ? y: y-1;
+                if (mapTilesInfo[x][y].getPassPrice() < 0)
                     return false;
             }
         } else {
@@ -41,8 +43,10 @@ public class NavigationMap {
                 _start = end;
                 _end = start;
             }
-            for (int y = (int) _start.getY(); y < _end.getY(); y++) {
-                if (mapTilesInfo[(int) Math.ceil((y - equation.B) / equation.M)][y].getPassPrice() < 0)
+            for (int y = (int) _start.getY(); y < (int) _end.getY(); y++) {
+                int x = (int) Math.ceil((y - equation.B) / equation.M);
+                x = x < mapModel.getTilesX() ? x: x-1;
+                if (mapTilesInfo[x][y].getPassPrice() < 0)
                     return false;
             }
         }

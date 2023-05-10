@@ -52,7 +52,7 @@ public class MainWindowController{
         new AnimationTimer() {
             public void handle(long currentNanoTime) {
                 mEnvironmentRenderer.render();
-                if (!pause)
+                //if (!pause)
                     mVirtualEnvironment.tickAgents();
             }
         }.start();

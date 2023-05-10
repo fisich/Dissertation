@@ -30,29 +30,29 @@ public class Scenario {
                 virtualEnvironment.getMap().updateTileInfo(i, j, Color.BLACK, -1);
             }
         List<Agent> yellowTeam = new ArrayList<>();
-        for (int i = 30; i <= 180; i += 50) {
-            for (int j = 30; j <= 180; j += 50) {
+        for (int i = 30; i <= 190; i += 40) {
+            for (int j = 30; j <= 190; j += 40) {
                 Agent agent = new Agent(i, j, 10, Color.YELLOW, virtualEnvironment);
                 yellowTeam.add(agent);
             }
         }
         List<Agent> redTeam = new ArrayList<>();
-        for (int i = 620; i <= 770; i += 50) {
-            for (int j = 30; j <= 180; j += 50) {
+        for (int i = 610; i <= 770; i += 40) {
+            for (int j = 30; j <= 190; j += 40) {
                 Agent agent = new Agent(i, j, 10, Color.RED, virtualEnvironment);
                 redTeam.add(agent);
             }
         }
         List<Agent> blueTeam = new ArrayList<>();
-        for (int i = 620; i <= 770; i += 50) {
-            for (int j = 620; j <= 770; j += 50) {
+        for (int i = 610; i <= 770; i += 40) {
+            for (int j = 610; j <= 770; j += 40) {
                 Agent agent = new Agent(i, j, 10, Color.BLUE, virtualEnvironment);
                 blueTeam.add(agent);
             }
         }
         List<Agent> greenTeam = new ArrayList<>();
-        for (int i = 30; i <= 180; i += 50) {
-            for (int j = 620; j <= 770; j += 50) {
+        for (int i = 30; i <= 190; i += 40) {
+            for (int j = 610; j <= 770; j += 40) {
                 Agent agent = new Agent(i, j, 10, Color.GREEN, virtualEnvironment);
                 greenTeam.add(agent);
             }
@@ -100,12 +100,36 @@ public class Scenario {
         }
     }
 
-    public static void scenario3(VirtualEnvironment virtualEnvironment) {
+    public static void scenario(VirtualEnvironment virtualEnvironment) {
         virtualEnvironment.agents().clear();
         virtualEnvironment.getMap().clearMapTilesInfo();
         virtualEnvironment.agents().add(new Agent(200, 200, 20, Color.RED, virtualEnvironment));
         virtualEnvironment.agents().add(new Agent(200, 400, 20, Color.RED, virtualEnvironment));
         virtualEnvironment.agents().get(0).moveTo(200, 400);
         virtualEnvironment.agents().get(1).moveTo(200, 200);
+    }
+
+    public static void scenario3(VirtualEnvironment virtualEnvironment)
+    {
+        virtualEnvironment.agents().clear();
+        virtualEnvironment.getMap().clearMapTilesInfo();
+        List<Agent> firstGroup = new ArrayList<>();
+        List<Agent> secondGroup = new ArrayList<>();
+        for (int i = 30; i <= 780; i+=40)
+        {
+                Agent agent = new Agent(i, 385, 10, Color.GREEN, virtualEnvironment);
+                firstGroup.add(agent);
+                Agent agent1 = new Agent(i, 415, 10, Color.ORANGE, virtualEnvironment);
+                secondGroup.add(agent1);
+        }
+        virtualEnvironment.agents().addAll(Stream.of(firstGroup.stream(), secondGroup.stream()).flatMap(i -> i).collect(Collectors.toList()));
+        for (Agent a: firstGroup)
+        {
+            a.moveTo(a.getPosition().getX(), 500);
+        }
+        for (Agent a: secondGroup)
+        {
+            a.moveTo(a.getPosition().getX(), 300);
+        }
     }
 }

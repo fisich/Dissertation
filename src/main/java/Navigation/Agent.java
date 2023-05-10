@@ -17,7 +17,7 @@ public class Agent {
     private Vector2D position;
     private Vector2D goalVelocity;
     private Vector2D currentVelocity;
-    public final double maxVelocity = 30;
+    public final double maxVelocity = 40;
     public final double radius;
     public final Color color;
     private final VirtualEnvironment virtualEnvironment;
@@ -25,8 +25,9 @@ public class Agent {
     private VelocityObstacleController VO;
     private Queue<Vector2D> route = new LinkedList<>();
     private Vector2D targetPoint;
-    private boolean hasCompleteMovement = true;
+    public boolean hasCompleteMovement = true;
 
+    private boolean calculateInfo = true;
     private long movementStartTime;
     public long movementTime;
     public double pathLength = 0;
@@ -41,6 +42,7 @@ public class Agent {
         this.virtualEnvironment = virtualEnvironment;
         goalVelocity = currentVelocity = new Vector2D(0, 0);
         viewRadius = maxVelocity * 3;
+        targetPoint = position;
     }
 
     public void moveTo(double posX, double posY) {
@@ -49,10 +51,11 @@ public class Agent {
             if (getRoute(targetPoint)) {
                 hasCompleteMovement = false;
                 movementStartTime = System.currentTimeMillis();
+                calculateInfo = true;
             }
             else
             {
-                targetPoint = null;
+                targetPoint = position;
             }
         }
     }
@@ -69,48 +72,43 @@ public class Agent {
     }
 
     public void tick(int FPS) {
+        Vector2D nextPoint;
+        // if route is empty agent should keep his position
         if (route.isEmpty()) {
             VO = null;
+            nextPoint = targetPoint;
             hasCompleteMovement = true;
-            currentVelocity = goalVelocity = Vector2D.ZERO;
-            return;
+            calculateInfo = false;
         }
-        Vector2D nextPoint = route.peek();
-        // если в процессе избегания столкновений агент приблизился к следующей точке минуя прошлую
+        else {
+            hasCompleteMovement = false;
+            nextPoint = route.peek();
+        }
+
+        // check if agent can reach some of the next points during obstacle avoidance
         if (route.size() > 1) {
             List<Vector2D> tempRoute = new ArrayList<>(route);
             List<Vector2D> finalTempRoute = tempRoute;
             int availableRouteNodeIndex = IntStream.range(1, route.size()).filter(i -> virtualEnvironment.getMap()
                     .isPathBetweenPointsClear(virtualEnvironment.toMapCoordinate2D(getPosition()),
                             virtualEnvironment.toMapCoordinate2D(finalTempRoute.get(i)))).reduce((a, b) -> b).orElse(-1);
+            // if found reachable point, then move to it and skip other part of route
             if (availableRouteNodeIndex > 0) {
                 nextPoint = tempRoute.get(availableRouteNodeIndex);
                 tempRoute = tempRoute.subList(availableRouteNodeIndex, tempRoute.size());
                 route = new LinkedList<>(tempRoute);
             }
         }
-        // если в процессе избегания столкновений потерян прямой путь к следующей точке маршрута
+        // if agent has lost line of sight of the point, then recalculate the route
         if (!virtualEnvironment.getMap().isPathBetweenPointsClear(virtualEnvironment.toMapCoordinate2D(getPosition()), virtualEnvironment.toMapCoordinate2D(nextPoint))) {
             getRoute(targetPoint);
             nextPoint = route.peek();
         }
-        if (isPositionReached(nextPoint)) {
-            route.poll();
-            if (route.isEmpty()) {
-                VO = null;
-                hasCompleteMovement = true;
-                currentVelocity = goalVelocity = Vector2D.ZERO;
-                movementTime = System.currentTimeMillis() - movementStartTime;
-                System.out.println("Path length: " + pathLength);
-                System.out.println("Movement time " + movementTime);
-                System.out.println("Average velocity deviation " + (velocityDeviation / (double) measureNumber));
-                return;
-            } else
-                nextPoint = route.peek();
-        }
         goalVelocity = nextPoint.subtract(position);
-        if (goalVelocity.getNorm() > maxVelocity)
+        //if (goalVelocity.getNorm() > maxVelocity)
             goalVelocity = goalVelocity.normalize().scalarMultiply(maxVelocity);
+        //if (goalVelocity.getNorm() < maxVelocity * 0.25)
+        //    goalVelocity = goalVelocity.normalize().scalarMultiply(maxVelocity * 0.25d);
         List<Agent> agents = getAgentsAround();
         VO = new VelocityObstacleController(this, agents, virtualEnvironment, getStaticObstaclesAround());
         if (currentVelocity.getNorm() == 0) {
@@ -119,15 +117,26 @@ public class Agent {
         if (VO.isVelocityAvailableForAgent(goalVelocity)) {
             currentVelocity = goalVelocity;
         } else {
-            if (!VO.isVelocityAvailableForAgent(currentVelocity)) {
-                currentVelocity = VO.findBestVelocityOutsideObstacles(goalVelocity);
-            }
+            currentVelocity = VO.findBestVelocityOutsideObstacles(this);
         }
         Vector2D posMove = currentVelocity.scalarMultiply(1d / FPS);
         position = position.add(posMove);
         pathLength += posMove.getNorm();
         velocityDeviation += Vector2D.distance(goalVelocity, currentVelocity);
         measureNumber += 1;
+        if (isPositionReached(nextPoint)) {
+            route.poll();
+            if (route.isEmpty()) {
+                if (calculateInfo) {
+                    hasCompleteMovement = true;
+                    calculateInfo = false;
+                    movementTime = System.currentTimeMillis() - movementStartTime;
+                    System.out.println("Path length: " + pathLength);
+                    System.out.println("Movement time " + movementTime);
+                    System.out.println("Average velocity deviation " + (velocityDeviation / (double) measureNumber));
+                }
+            }
+        }
     }
 
     private boolean isPositionReached(Vector2D point) {
@@ -138,9 +147,14 @@ public class Agent {
     }
 
     private List<Agent> getAgentsAround() {
+        double searchRadius;
+        if (hasCompleteMovement)
+            searchRadius = radius * 3;
+        else
+            searchRadius = viewRadius;
         return virtualEnvironment.agents().stream()
                 .filter(agent -> agent != this &&
-                        Vector2D.distance(agent.getPosition(), this.getPosition()) <= viewRadius)
+                        Vector2D.distance(agent.getPosition(), this.getPosition()) <= searchRadius)
                 .collect(Collectors.toList());
     }
 
