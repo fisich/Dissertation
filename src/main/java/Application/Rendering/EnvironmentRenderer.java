@@ -70,7 +70,7 @@ public class EnvironmentRenderer{
         }
     }
 
-    public void drawLine(Vector2D start, Vector2D end)
+    private void drawLine(Vector2D start, Vector2D end)
     {
         drawLine(start, end, Color.BLACK, 1);
     }

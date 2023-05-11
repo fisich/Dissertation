@@ -97,7 +97,7 @@ public class MainWindowController{
         drawDynamicObstaclesChkbox.setOnMouseClicked(event -> mEnvironmentRenderer.drawDynamicObstacles = drawDynamicObstaclesChkbox.isSelected());
     }
 
-    public void mouseDrawOnCanvas(MouseEvent mouseEvent) {
+    private void mouseDrawOnCanvas(MouseEvent mouseEvent) {
         Vector2D mapTile = mVirtualEnvironment.fromScreenToMapCoordinate2D(mouseEvent.getX(), mouseEvent.getY());
         mVirtualEnvironment.getMap().updateTileInfo((int) mapTile.getX(), (int) mapTile.getY(), Color.BLACK, -1);
     }
