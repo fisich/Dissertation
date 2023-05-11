@@ -17,7 +17,7 @@ public class Agent {
     private Vector2D position;
     private Vector2D goalVelocity;
     private Vector2D currentVelocity;
-    public final double maxVelocity = 30;
+    public final double maxVelocity = 40;
     public final double radius;
     public final Color color;
     private final VirtualEnvironment virtualEnvironment;
@@ -124,6 +124,7 @@ public class Agent {
         }
         Vector2D posMove = currentVelocity.scalarMultiply(1d / FPS);
         position = position.add(posMove);
+        stickToTarget();
         pathLength += posMove.getNorm();
         velocityDeviation += Vector2D.distance(goalVelocity, currentVelocity);
         measureNumber += 1;
@@ -131,7 +132,7 @@ public class Agent {
 
     private boolean isPositionReached(Vector2D point) {
         if (Vector2D.distance(point, targetPoint) < virtualEnvironment.getMapModel().getTileSize()) {
-            return Vector2D.distance(point, getPosition()) < 0.1d;
+            return Vector2D.distance(point, getPosition()) < 0.5d;
         }
         return Vector2D.distance(point, getPosition()) <= 1.5 * radius;
     }
@@ -141,6 +142,12 @@ public class Agent {
                 .filter(agent -> agent != this &&
                         Vector2D.distance(agent.getPosition(), this.getPosition()) <= viewRadius)
                 .collect(Collectors.toList());
+    }
+
+    private void stickToTarget()
+    {
+        if (Vector2D.distance(getPosition(), targetPoint) < 0.6d)
+            position = targetPoint;
     }
 
     private List<StaticVelocityObstacle> getStaticObstaclesAround() {

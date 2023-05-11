@@ -141,9 +141,9 @@ public class VelocityObstacleController {
         List<Map.Entry<Vector2D, Double>> velocityAndPenaltyScore = new ArrayList<>();
         for (Vector2D vel : velocities) {
             double distScore = Vector2D.distance(agent.getGoalVelocity(), vel)
-                    + Vector2D.distance(agent.getVelocity(), vel);
+                    + 0.5d * Vector2D.distance(agent.getVelocity(), vel);
             if (minCollision == 0) {
-                distScore -= vel.getNorm();
+                distScore -= vel.getNorm(); // using faster velocity usual show better performance for group
                 velocityAndPenaltyScore.add(new AbstractMap.SimpleEntry<>(vel, distScore));
             } else {
                 double timeToCollideScore = 0;
