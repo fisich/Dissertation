@@ -3,7 +3,6 @@ package Navigation.VelocityObstacle;
 import MathExtensions.Vector2DExtension;
 import Navigation.Agent;
 import Navigation.Map.NavigationMapModel;
-import Navigation.VirtualEnvironment;
 import org.apache.commons.math3.geometry.euclidean.twod.Vector2D;
 import org.apache.commons.math3.util.FastMath;
 
@@ -17,9 +16,9 @@ public class VelocityObstacleController {
     private final NavigationMapModel mapModel;
     private final Agent origin;
 
-    public VelocityObstacleController(Agent origin, List<Agent> otherAgents, VirtualEnvironment virtualEnvironment, List<StaticVelocityObstacle> mapObstacles) {
-        List<BaseObstacle> agentObstacles = sortAgents(origin, otherAgents).stream().map(
-                b -> VelocityObstacleBuilder.build(origin, b, virtualEnvironment.getAlgorithm())
+    public VelocityObstacleController(Agent origin, List<Agent> otherAgents, VelocityObstacleAlgorithm algorithm, NavigationMapModel mapModel, List<StaticVelocityObstacle> mapObstacles) {
+        List<BaseObstacle> agentObstacles = otherAgents.stream().map(
+                b -> VelocityObstacleBuilder.build(origin, b, algorithm)
         ).collect(Collectors.toList());
         dynamicObstacles = new ArrayList<>();
         this.staticObstacles = new ArrayList<>();
@@ -36,7 +35,7 @@ public class VelocityObstacleController {
             }
         }
         this.staticObstacles = Stream.concat(this.staticObstacles.stream(), mapObstacles.stream()).collect(Collectors.toList());
-        mapModel = virtualEnvironment.getMapModel();
+        this.mapModel = mapModel;
         this.origin = origin;
     }
 
@@ -123,8 +122,8 @@ public class VelocityObstacleController {
         Vector2D agentMaxVelocity = new Vector2D(0, agent.maxVelocity);
         for (int i = 0; i < 24; i++) {
             Vector2D vel = Vector2DExtension.rotateVector(agentMaxVelocity, 0.261799 * i);
-            if (!agent.hasCompleteMovement)
-                velocities.add(vel);
+            //if (!agent.hasCompleteMovement)
+            velocities.add(vel);
             velocities.add(vel.scalarMultiply(0.5d));
             velocities.add(vel.scalarMultiply(0.25d));
         }
@@ -145,12 +144,11 @@ public class VelocityObstacleController {
             double distScore;
             if (agent.hasCompleteMovement) {
                 distScore = Vector2D.distance(agent.getGoalVelocity(), vel);
-                distScore -= vel.getNorm();
                 velocityAndPenaltyScore.add(new AbstractMap.SimpleEntry<>(vel, distScore));
             } else {
                 if (minCollision == 0) {
                     distScore = Vector2D.distance(agent.getGoalVelocity(), vel);
-                    distScore += Vector2D.distance(agent.getVelocity(), vel);
+                    distScore += Vector2D.distance(agent.getVelocity(), vel) * 0.5d;
                     velocityAndPenaltyScore.add(new AbstractMap.SimpleEntry<>(vel, distScore));
                 } else {
                     distScore = Vector2D.distance(agent.getGoalVelocity(), vel);

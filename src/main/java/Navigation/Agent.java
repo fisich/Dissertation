@@ -2,10 +2,7 @@ package Navigation;
 
 import Navigation.PathFinding.AStarPathFinding;
 import Navigation.PathFinding.PathProcessing;
-import Navigation.VelocityObstacle.BaseObstacle;
-import Navigation.VelocityObstacle.DynamicVelocityObstacle;
-import Navigation.VelocityObstacle.StaticVelocityObstacle;
-import Navigation.VelocityObstacle.VelocityObstacleController;
+import Navigation.VelocityObstacle.*;
 import javafx.scene.paint.Color;
 import org.apache.commons.math3.geometry.euclidean.twod.Vector2D;
 
@@ -105,15 +102,15 @@ public class Agent {
             nextPoint = route.peek();
         }
         goalVelocity = nextPoint.subtract(position);
-        //if (goalVelocity.getNorm() > maxVelocity)
+        if (goalVelocity.getNorm() > maxVelocity)
             goalVelocity = goalVelocity.normalize().scalarMultiply(maxVelocity);
-        //if (goalVelocity.getNorm() < maxVelocity * 0.25)
-        //    goalVelocity = goalVelocity.normalize().scalarMultiply(maxVelocity * 0.25d);
         List<Agent> agents = getAgentsAround();
-        VO = new VelocityObstacleController(this, agents, virtualEnvironment, getStaticObstaclesAround());
-        if (currentVelocity.getNorm() == 0) {
-            currentVelocity = goalVelocity;
-        }
+        VelocityObstacleAlgorithm algorithm;
+        if (hasCompleteMovement)
+            algorithm = VelocityObstacleAlgorithm.RECIPROCAL_VELOCITY_OBSTACLE;
+        else
+            algorithm = virtualEnvironment.getAlgorithm();
+        VO = new VelocityObstacleController(this, agents, algorithm, virtualEnvironment.getMapModel(), getStaticObstaclesAround());
         if (VO.isVelocityAvailableForAgent(goalVelocity)) {
             currentVelocity = goalVelocity;
         } else {
@@ -121,6 +118,8 @@ public class Agent {
         }
         Vector2D posMove = currentVelocity.scalarMultiply(1d / FPS);
         position = position.add(posMove);
+        if (!hasCompleteMovement)
+            magnitizeToTarget();
         pathLength += posMove.getNorm();
         velocityDeviation += Vector2D.distance(goalVelocity, currentVelocity);
         measureNumber += 1;
@@ -141,15 +140,21 @@ public class Agent {
 
     private boolean isPositionReached(Vector2D point) {
         if (Vector2D.distance(point, targetPoint) < virtualEnvironment.getMapModel().getTileSize()) {
-            return Vector2D.distance(point, getPosition()) < 0.1d;
+            return Vector2D.distance(targetPoint, getPosition()) < 0.5d;
         }
         return Vector2D.distance(point, getPosition()) <= 1.5 * radius;
+    }
+
+    private void magnitizeToTarget()
+    {
+        if (Vector2D.distance(getPosition(), targetPoint) < 1d)
+            position = targetPoint;
     }
 
     private List<Agent> getAgentsAround() {
         double searchRadius;
         if (hasCompleteMovement)
-            searchRadius = radius * 3;
+            searchRadius = maxVelocity;
         else
             searchRadius = viewRadius;
         return virtualEnvironment.agents().stream()
