@@ -120,7 +120,7 @@ public class VelocityObstacleController {
 
     public Vector2D findBestVelocityOutsideObstacles(Agent agent) {
         List<Vector2D> velocities = new ArrayList<>();
-        for (int i = 1; i < 24; i++) {
+        for (int i = 0; i < 24; i++) {
             Vector2D vel = Vector2DExtension.rotateVector(new Vector2D(0, agent.maxVelocity), 0.261799 * i);
             velocities.add(vel);
             velocities.add(vel.scalarMultiply(0.5d));
@@ -141,12 +141,10 @@ public class VelocityObstacleController {
         List<Map.Entry<Vector2D, Double>> velocityAndPenaltyScore = new ArrayList<>();
         for (Vector2D vel : velocities) {
             double distScore = Vector2D.distance(agent.getGoalVelocity(), vel)
-                    + 0.5d * Vector2D.distance(agent.getVelocity(), vel);
-            if (minCollision == 0) {
-                distScore -= vel.getNorm(); // using faster velocity usual show better performance for group
-                velocityAndPenaltyScore.add(new AbstractMap.SimpleEntry<>(vel, distScore));
-            } else {
-                double timeToCollideScore = 0;
+                    + 0.5d * Vector2D.distance(agent.getVelocity(), vel) - vel.getNorm();
+            double timeToCollideScore = 0;
+            // using faster velocity usual show better performance for group
+            if (minCollision > 0) {
                 for (DynamicVelocityObstacle obstacle : dynamicObstacles) {
                     if (obstacle.isVelocityCollide(vel)) {
                         Vector2D collisionPoint = obstacle.getCrossPointWithClosestSide(vel);
@@ -154,8 +152,8 @@ public class VelocityObstacleController {
                         timeToCollideScore = FastMath.max(timeToCollideScore, timeToCollideScoreTemp);
                     }
                 }
-                velocityAndPenaltyScore.add(new AbstractMap.SimpleEntry<>(vel, distScore + timeToCollideScore));
             }
+            velocityAndPenaltyScore.add(new AbstractMap.SimpleEntry<>(vel, distScore + timeToCollideScore));
         }
         Optional<Vector2D> bestVelocity = velocityAndPenaltyScore.stream()
                 .min(Comparator.comparingDouble(Map.Entry::getValue))

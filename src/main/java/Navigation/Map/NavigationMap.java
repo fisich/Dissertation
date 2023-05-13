@@ -3,6 +3,7 @@ package Navigation.Map;
 import MathExtensions.Vector2DExtension;
 import javafx.scene.paint.Color;
 import org.apache.commons.math3.geometry.euclidean.twod.Vector2D;
+import org.apache.commons.math3.util.FastMath;
 
 import static MathExtensions.Vector2DExtension.getLineEquation;
 
@@ -33,10 +34,13 @@ public class NavigationMap {
                 _end = start;
             }
             for (int x = (int) _start.getX(); x < (int) _end.getX(); x++) {
-                int y = (int) Math.ceil(x * equation.M + equation.B);
-                y = y < mapModel.getTilesY() ? y : y - 1;
-                if (mapTilesInfo[x][y].getPassPrice() < 0)
-                    return false;
+                double eqY = (x * equation.M + equation.B);
+                for (int y = (int) FastMath.floor(eqY); y <= FastMath.ceil(eqY); y++)
+                {
+                    y = y < mapModel.getTilesY() ? y: y-1;
+                    if (mapTilesInfo[x][y].getPassPrice() < 0)
+                        return false;
+                }
             }
         } else {
             if (start.getY() > end.getY()) {
@@ -44,10 +48,13 @@ public class NavigationMap {
                 _end = start;
             }
             for (int y = (int) _start.getY(); y < (int) _end.getY(); y++) {
-                int x = (int) Math.ceil((y - equation.B) / equation.M);
-                x = x < mapModel.getTilesX() ? x : x - 1;
-                if (mapTilesInfo[x][y].getPassPrice() < 0)
-                    return false;
+                double eqX = ((y - equation.B) / equation.M);
+                for (int x = (int) FastMath.floor(eqX); x <= FastMath.ceil(eqX); x++)
+                {
+                    x = x < mapModel.getTilesX() ? x: x-1;
+                    if (mapTilesInfo[x][y].getPassPrice() < 0)
+                        return false;
+                }
             }
         }
         return true;

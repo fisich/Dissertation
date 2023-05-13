@@ -78,13 +78,10 @@ public class Agent {
         Vector2D nextPoint = route.peek();
         // check if agent can reach some of the next points during obstacle avoidance
         if (route.size() > 1) {
-            List<Vector2D> tempRoute = new ArrayList<>(route);
-            List<Vector2D> finalTempRoute = tempRoute;
-            int availableRouteNodeIndex = IntStream.range(1, route.size()).filter(i -> virtualEnvironment.getMap()
-                    .isPathBetweenPointsClear(virtualEnvironment.toMapCoordinate2D(getPosition()),
-                            virtualEnvironment.toMapCoordinate2D(finalTempRoute.get(i)))).reduce((a, b) -> b).orElse(-1);
+            int availableRouteNodeIndex = findShorterRoute();
             // if found reachable point, then move to it and skip other part of route
             if (availableRouteNodeIndex > 0) {
+                List<Vector2D> tempRoute = new ArrayList<>(route);
                 nextPoint = tempRoute.get(availableRouteNodeIndex);
                 tempRoute = tempRoute.subList(availableRouteNodeIndex, tempRoute.size());
                 route = new LinkedList<>(tempRoute);
@@ -92,8 +89,19 @@ public class Agent {
         }
         // if agent has lost line of sight of the point, then recalculate the route
         if (!virtualEnvironment.getMap().isPathBetweenPointsClear(virtualEnvironment.toMapCoordinate2D(getPosition()), virtualEnvironment.toMapCoordinate2D(nextPoint))) {
-            getRoute(targetPoint);
-            nextPoint = route.peek();
+            int availableRouteNodeIndex = findShorterRoute();
+            // if found reachable point, then move to it and skip other part of route
+            if (availableRouteNodeIndex > 0) {
+                List<Vector2D> tempRoute = new ArrayList<>(route);
+                nextPoint = tempRoute.get(availableRouteNodeIndex);
+                tempRoute = tempRoute.subList(availableRouteNodeIndex, tempRoute.size());
+                route = new LinkedList<>(tempRoute);
+            }
+            // if not found, then should recalculate route
+            else {
+                getRoute(targetPoint);
+                nextPoint = route.peek();
+            }
         }
         if (isPositionReached(nextPoint)) {
             route.poll();
@@ -128,6 +136,15 @@ public class Agent {
         pathLength += posMove.getNorm();
         velocityDeviation += Vector2D.distance(goalVelocity, currentVelocity);
         measureNumber += 1;
+    }
+
+    private int findShorterRoute()
+    {
+        List<Vector2D> finalTempRoute = new ArrayList<>(route);
+        // if found reachable point, then move to it and skip other part of route
+        return IntStream.range(1, route.size()).filter(i -> virtualEnvironment.getMap()
+                .isPathBetweenPointsClear(virtualEnvironment.toMapCoordinate2D(getPosition()),
+                        virtualEnvironment.toMapCoordinate2D(finalTempRoute.get(i)))).reduce((a, b) -> b).orElse(-1);
     }
 
     private boolean isPositionReached(Vector2D point) {

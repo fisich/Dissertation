@@ -103,6 +103,65 @@ public class Scenario {
     public static void scenario3(VirtualEnvironment virtualEnvironment) {
         virtualEnvironment.agents().clear();
         virtualEnvironment.getMap().clearMapTilesInfo();
+        for (int i = 10; i < 17; i++)
+            for (int j = 10; j < 17; j++) {
+                virtualEnvironment.getMap().updateTileInfo(i, j, Color.BLACK, -1);
+            }
+        for (int i = 22; i < 29; i++)
+            for (int j = 10; j < 17; j++) {
+                virtualEnvironment.getMap().updateTileInfo(i, j, Color.BLACK, -1);
+            }
+        for (int i = 10; i < 17; i++)
+            for (int j = 22; j < 29; j++) {
+                virtualEnvironment.getMap().updateTileInfo(i, j, Color.BLACK, -1);
+            }
+        for (int i = 22; i < 29; i++)
+            for (int j = 22; j < 29; j++) {
+                virtualEnvironment.getMap().updateTileInfo(i, j, Color.BLACK, -1);
+            }
+        List<Agent> yellowTeam = new ArrayList<>();
+        for (int i = 30; i <= 180; i += 50) {
+            for (int j = 30; j <= 180; j += 50) {
+                Agent agent = new Agent(i, j, 10, Color.YELLOW, virtualEnvironment);
+                yellowTeam.add(agent);
+            }
+        }
+        List<Agent> redTeam = new ArrayList<>();
+        for (int i = 620; i <= 770; i += 50) {
+            for (int j = 30; j <= 180; j += 50) {
+                Agent agent = new Agent(i, j, 10, Color.RED, virtualEnvironment);
+                redTeam.add(agent);
+            }
+        }
+        List<Agent> blueTeam = new ArrayList<>();
+        for (int i = 620; i <= 770; i += 50) {
+            for (int j = 620; j <= 770; j += 50) {
+                Agent agent = new Agent(i, j, 10, Color.BLUE, virtualEnvironment);
+                blueTeam.add(agent);
+            }
+        }
+        List<Agent> greenTeam = new ArrayList<>();
+        for (int i = 30; i <= 180; i += 50) {
+            for (int j = 620; j <= 770; j += 50) {
+                Agent agent = new Agent(i, j, 10, Color.GREEN, virtualEnvironment);
+                greenTeam.add(agent);
+            }
+        }
+        virtualEnvironment.agents().addAll(
+                Stream.of(yellowTeam.stream(),
+                        redTeam.stream(),
+                        blueTeam.stream(),
+                        greenTeam.stream())
+                        .flatMap(i -> i).collect(Collectors.toList())
+        );
+        for (Agent a : virtualEnvironment.agents()) {
+            a.moveTo(Math.abs(virtualEnvironment.getMapModel().sizeX() - a.getPosition().getX()), Math.abs(virtualEnvironment.getMapModel().sizeY() - a.getPosition().getY()));
+        }
+    }
+
+    public static void scenario4(VirtualEnvironment virtualEnvironment) {
+        virtualEnvironment.agents().clear();
+        virtualEnvironment.getMap().clearMapTilesInfo();
         virtualEnvironment.agents().add(new Agent(200, 200, 20, Color.RED, virtualEnvironment));
         virtualEnvironment.agents().add(new Agent(200, 400, 20, Color.RED, virtualEnvironment));
         virtualEnvironment.agents().get(0).moveTo(200, 400);
