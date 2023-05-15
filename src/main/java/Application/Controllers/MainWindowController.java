@@ -83,13 +83,23 @@ public class MainWindowController{
                     throw new IllegalStateException("Unexpected value: " + algorithmsChoiceBox.getSelectionModel().getSelectedItem());
             }
             mVirtualEnvironment.setAlgorithm(algorithm);
-            String currentValue = scenariosChoiceBox.getSelectionModel().getSelectedItem();
-            if (currentValue.equals("Scenario 1"))
-                Scenario.scenario1(mVirtualEnvironment);
-            else if (currentValue.equals("Scenario 2"))
-                Scenario.scenario2(mVirtualEnvironment);
-            else
-                Scenario.scenario3(mVirtualEnvironment);
+            switch (scenariosChoiceBox.getSelectionModel().selectedIndexProperty().getValue())
+            {
+                case 0:
+                    Scenario.scenario1(mVirtualEnvironment);
+                    break;
+                case 1:
+                    Scenario.scenario2(mVirtualEnvironment);
+                    break;
+                case 2:
+                    Scenario.scenario3(mVirtualEnvironment);
+                    break;
+                case 3:
+                    Scenario.scenario4(mVirtualEnvironment);
+                    break;
+                default:
+                    break;
+            }
         });
         runScenarioBtn.setOnMouseClicked(event -> pause = !pause);
         drawVelocitiesChkbox.setOnMouseClicked(event -> mEnvironmentRenderer.drawVelocities = drawVelocitiesChkbox.isSelected());
