@@ -13,6 +13,7 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ChoiceBox;
+import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
@@ -109,6 +110,12 @@ public class MainWindowController{
 
     private void mouseDrawOnCanvas(MouseEvent mouseEvent) {
         Vector2D mapTile = mVirtualEnvironment.fromScreenToMapCoordinate2D(mouseEvent.getX(), mouseEvent.getY());
-        mVirtualEnvironment.getMap().updateTileInfo((int) mapTile.getX(), (int) mapTile.getY(), Color.BLACK, -1);
+        if (mouseEvent.getButton() == MouseButton.PRIMARY) {
+            mVirtualEnvironment.getMap().updateTileInfo((int) mapTile.getX(), (int) mapTile.getY(), Color.BLACK, -1);
+        }
+        else if (mouseEvent.getButton() == MouseButton.SECONDARY)
+        {
+            mVirtualEnvironment.getMap().updateTileInfo((int) mapTile.getX(), (int) mapTile.getY(), Color.LIGHTGRAY, 0);
+        }
     }
 }
